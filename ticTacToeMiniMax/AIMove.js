@@ -2,11 +2,13 @@
 	File: AIMove.js
 
 	Includes functions for the tic tac toe AI to make its move
+
+	Edit: the minimax function has been edited to include AB-pruning
 */
 
 
 // recursive function that returns the best score possible from a particular instance of a board
-function minimax(board, bIsAITurn, totMoves){
+function minimax(board, bIsAITurn, totMoves, alpha, beta){
 	// if the game is over, we use the total moves of the solution to calculate our heuristic value
 	// (we want to win with the fewest moves possible)
 	if(isGameOver()){
@@ -40,9 +42,17 @@ function minimax(board, bIsAITurn, totMoves){
 
 				if(bIsAITurn){
 					bestScore = max(curScore, bestScore);
+					alpha = max(alpha, curScore);
+					if(alpha >= beta){
+						return bestScore;
+					}
 				}
 				else{
 					bestScore = min(curScore, bestScore);
+					beta = min(beta, curScore);
+					if(beta <= alpha){
+						return bestScore;
+					}
 				}
 			}
 		}
@@ -62,7 +72,7 @@ function AIMove(){
 		for(let j=0; j<3;j++){
 			if(board[i][j] == ''){
 				board[i][j] = players[ai];
-				let curScore = minimax(board, false, totMoves+1);
+				let curScore = minimax(board, false, totMoves+1, -Infinity, Infinity);
 				board[i][j] = '';
 
 				if(curScore > bestScore){
