@@ -1,7 +1,14 @@
+/* 
+	file: ticTacToe.js
+
+	Human vs (unbeatable) minimax AI tic tac toe game
+*/
+
+const human = 0;
+const ai = 1;
 
 let board = [['', '', ''], ['', '', ''], ['', '', '']];
-
-let players = ['O', 'X'];
+let players = ['X', 'O'];
 
 let curPlayer = 0;
 let moves = 0;
@@ -9,77 +16,70 @@ let moves = 0;
 let bGameOver = false;
 let winner = null;
 
-function changeCurPlayer(){
-	if(curPlayer == 0){
-		curPlayer = 1;
-	}else{
-		curPlayer = 0;
-	}
-}
 
 function isGameOver(){
 	// horizontal
 	for(let i =0;i<3;i++){
 		if(board[i][0] != '' && board[i][0] == board[i][1] && board[i][1] == board[i][2]){
-			bGameOver = true;
-			winner = players[curPlayer];
+			return true;
 		}
 	}
+
 	// vertical
 	for(let i =0;i<3;i++){
 		if(board[0][i] != '' && board[0][i] == board[1][i] && board[1][i] == board[2][i]){
-			bGameOver = true;
-			winner = players[curPlayer];
+			return true;
 		}
 	}
+
 	// diagonal
 	if(board[0][0] != '' && board[0][0] == board[1][1] && board[1][1] == board[2][2]){
-		bGameOver = true;
-		winner = players[curPlayer];
+		return true;
 	}
 	if(board[0][2] != '' && board[0][2] == board[1][1] && board[1][1] ==board[2][0]){
-		bGameOver = true;
-		winner = players[curPlayer];
+		return true;
 	}
 
-
-	if(!bGameOver && moves == 9){
-		bGameOver = true;
-	}
-
-	return bGameOver;
+	return false;
 }
 
 
 function mousePressed(){
+	if(curPlayer == ai || bGameOver){
+		return;
+	}
 	if(mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
 		return;
 	}
 
-	if(!bGameOver){
-		let i = floor(mouseY / height * 3);
-		let j = floor(mouseX / width * 3);
+	let i = floor(mouseY / height * 3);
+	let j = floor(mouseX / width * 3);
 
-		if(board[i][j] == ''){
-			board[i][j] = players[curPlayer];
-			moves++;
-			if(!isGameOver()){
-				changeCurPlayer();
-			}
+	if(board[i][j] == ''){
+		board[i][j] = players[human];
+		moves++;
+
+		if(isGameOver()){
+			bGameOver = true;
+			winner = human;
+		}else if(moves == 9){
+			// tie
+			bGameOver = true;
+		}else{
+			curPlayer = ai;
 		}
 	}
 }
 
 
 function setup() {
-	let resultStr = '';
 	createCanvas(400, 400);
+	background(220);
+	textSize(height/3);
 
+	let resultStr = '';
 	y = height / 3;
 	x = width / 3;
-
-
-	background(220);
 
 	// draw board
 	strokeWeight(4);
@@ -90,8 +90,18 @@ function setup() {
 }
 
 function draw() {
-	// put drawing code here
-	textSize(height/3);
+	if(!bGameOver && curPlayer == ai){
+		AIMove();
+		moves++;
+		if(isGameOver()){
+			bGameOver = true;
+			winner = curPlayer;
+		}else if(moves == 9){
+			bGameOver = true;
+		}else{
+			curPlayer = human;
+		}
+	}
 
 	// drawing moves
 	textAlign(LEFT, TOP);
@@ -119,7 +129,12 @@ function draw() {
 			resultStr = "It's a tie!";
 		}
 		else{
-			resultStr = winner + " is the winner!"
+			if(winner == human){
+				resultStr = "Congratulations! You won!";
+			}
+			else{
+				resultStr = "You lost! Try again.";
+			}
 		}
 
 		createP(resultStr).style('color', '#000').style('font-size', '32pt');
