@@ -1,7 +1,12 @@
+/*
+	File: ticTacToe.js
 
+	A tic tac toe game between two human players
+
+*/
 let board = [['', '', ''], ['', '', ''], ['', '', '']];
 
-let players = ['O', 'X'];
+let players = ['X', 'O'];
 
 let curPlayer = 0;
 let moves = 0;
@@ -23,6 +28,7 @@ function isGameOver(){
 		if(board[i][0] != '' && board[i][0] == board[i][1] && board[i][1] == board[i][2]){
 			bGameOver = true;
 			winner = players[curPlayer];
+			return bGameOver;
 		}
 	}
 	// vertical
@@ -30,16 +36,19 @@ function isGameOver(){
 		if(board[0][i] != '' && board[0][i] == board[1][i] && board[1][i] == board[2][i]){
 			bGameOver = true;
 			winner = players[curPlayer];
+			return bGameOver;
 		}
 	}
 	// diagonal
 	if(board[0][0] != '' && board[0][0] == board[1][1] && board[1][1] == board[2][2]){
 		bGameOver = true;
 		winner = players[curPlayer];
+		return bGameOver;
 	}
 	if(board[0][2] != '' && board[0][2] == board[1][1] && board[1][1] ==board[2][0]){
 		bGameOver = true;
 		winner = players[curPlayer];
+		return bGameOver;
 	}
 
 
@@ -52,36 +61,32 @@ function isGameOver(){
 
 
 function mousePressed(){
-	if(mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
+	if(bGameOver || mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height){
 		return;
 	}
 
-	if(!bGameOver){
-		let i = floor(mouseY / height * 3);
-		let j = floor(mouseX / width * 3);
+	let i = floor(mouseY / height * 3);
+	let j = floor(mouseX / width * 3);
 
-		if(board[i][j] == ''){
-			board[i][j] = players[curPlayer];
-			moves++;
-			if(!isGameOver()){
-				changeCurPlayer();
-			}
+	if(board[i][j] == ''){
+		board[i][j] = players[curPlayer];
+		moves++;
+		if(!isGameOver()){
+			changeCurPlayer();
 		}
 	}
 }
 
 
 function setup() {
-	let resultStr = '';
 	createCanvas(400, 400);
-
-	y = height / 3;
-	x = width / 3;
-
-
 	background(220);
 
+	let resultStr = '';
+	
 	// draw board
+	y = height / 3;
+	x = width / 3;
 	strokeWeight(4);
 	line(0, y, width,y);
 	line(0, 2* y, width , 2*y);
