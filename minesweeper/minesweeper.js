@@ -5,6 +5,8 @@
 
 */
 
+
+// constants. Can be changed for a more personalized game or for a different difficulty level
 const numCellsWidth = 16;
 const numCellsHeight = 16;
 const totMines = 40;
@@ -22,13 +24,18 @@ let question = '❓';
 let mine = '💥';
 
 
+// Cell class has three members.
+// num represents the number of mines directly next to this cell. -1 represents a mine
+// state is the current state of the display. It can be hidden, flag, question, or mine
+// bFlipped is a bool that holds whether the cell has been clicked by the player
 function Cell(){
 	this.num = 0;
 	this.state = hidden;
 	this.bFlipped = false;
 }
 
-
+// initializes board (2-D Cell object array)
+// all cells start hidden, not flipped, and holding a 0
 function initializeBoard(){
 	for(let i = 0; i < numCellsHeight;i++){
 		board.push([]);
@@ -38,6 +45,7 @@ function initializeBoard(){
 	}
 }
 
+// helper function that updates the numbers of cells around a mine
 function setNumbers(yCor, xCor){
 	for(let i = yCor-1; i < yCor + 2; i++){
 		for(let j = xCor-1; j < xCor + 2; j++){
@@ -49,11 +57,13 @@ function setNumbers(yCor, xCor){
 
 }
 
+// randomly populate the board with mines and update the numbers of the cells around those mines
 function placeMinesAndNumbers(){
 	let yCor = int(random(0, numCellsHeight));
 	let xCor = int(random(0, numCellsWidth));
 
 	for(let i = 0; i <totMines; i++){
+		// making sure we don't get two mines in the same cell
 		while(board[yCor][xCor].num == -1){
 			yCor = int(random(0, numCellsHeight));
 			xCor = int(random(0, numCellsWidth));
@@ -64,11 +74,9 @@ function placeMinesAndNumbers(){
 		// set numbers around mine
 		setNumbers(yCor, xCor);
 	}
-
-	
 }
 
-
+// recursively flips all 0s and first "layer" of non-zeroes around a clicked 0 cell
 function clearCluster(i, j){
 	let curCell = board[i][j];
 
@@ -76,6 +84,7 @@ function clearCluster(i, j){
 		return;
 	}
 
+	// first layer of non-zero numebrs
 	if(curCell.num > 0){
 		curCell.state = " "+ curCell.num.toString();
 		curCell.bFlipped = true;
@@ -119,7 +128,6 @@ function mouseReleased(){
 	}
 	
 	if(mouseButton == LEFT){
-
 		if(cellClicked.num == -1){
 			cellClicked.state = mine;
 			cellClicked.bFlipped = true;
@@ -169,15 +177,6 @@ function setup() {
 
 	initializeBoard();
 	placeMinesAndNumbers();
-	
-	// draw board
-	// strokeWeight(4);
-	// for(let i =1; i < numCellsHeight;i++){
-	// 	line(0, y*i, width,y*i);
-	// }
-	// for(let i =1; i<numCellsWidth;i++){
-	// 	line(x*i, 0, x*i, height);
-	// }
 
 	score = createP("Mines left: " + (totMines - flaggedMines).toString()).style('color', '#000').style('font-size', '32pt');
 	
