@@ -23,6 +23,8 @@ let flag = '⛳';
 let question = '❓';
 let mine = '💥';
 
+let btn;
+
 
 // Cell class has three members.
 // num represents the number of mines directly next to this cell. -1 represents a mine
@@ -167,6 +169,21 @@ function mouseReleased(){
 }
 
 
+function restart(){
+	board = [];
+	bGameOver = false;
+	bWin = false;
+	tilesToGo = numCellsHeight* numCellsWidth - totMines;
+	flaggedMines = 0;
+
+	initializeBoard();
+	placeMinesAndNumbers();
+
+	btn.remove();
+	loop();
+}
+
+
 function setup() {
 	createCanvas(730, 730);
 	textSize(height/numCellsHeight - 15);
@@ -204,5 +221,7 @@ function draw() {
 		}
 
 		score.html(resultStr);
+		btn = createButton('Play again?');
+		btn.mousePressed(restart);
 	}
 }

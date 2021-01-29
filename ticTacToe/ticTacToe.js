@@ -5,7 +5,6 @@
 
 */
 let board = [['', '', ''], ['', '', ''], ['', '', '']];
-
 let players = ['X', 'O'];
 
 let curPlayer = 0;
@@ -14,6 +13,10 @@ let moves = 0;
 let bGameOver = false;
 let winner = null;
 
+let p;
+let btn;
+
+
 function changeCurPlayer(){
 	if(curPlayer == 0){
 		curPlayer = 1;
@@ -21,6 +24,7 @@ function changeCurPlayer(){
 		curPlayer = 0;
 	}
 }
+
 
 function isGameOver(){
 	// horizontal
@@ -78,6 +82,30 @@ function mousePressed(){
 }
 
 
+function restart(){
+	p.remove();
+	btn.remove();
+
+	// draw board
+	clear();
+	background(220);
+	line(0, y, width,y);
+	line(0, 2* y, width , 2*y);
+	line(x, 0, x, height);
+	line(x*2, 0, x*2, height);
+
+	board = [['', '', ''], ['', '', ''], ['', '', '']];
+
+	curPlayer = 0;
+	moves = 0;
+
+	bGameOver = false;
+	winner = null;
+
+	loop();
+}
+
+
 function setup() {
 	createCanvas(400, 400);
 	background(220);
@@ -88,15 +116,15 @@ function setup() {
 	y = height / 3;
 	x = width / 3;
 	strokeWeight(4);
+	textSize(height/3);
 	line(0, y, width,y);
 	line(0, 2* y, width , 2*y);
 	line(x, 0, x, height);
 	line(x*2, 0, x*2, height);
 }
 
+
 function draw() {
-	// put drawing code here
-	textSize(height/3);
 
 	// drawing moves
 	textAlign(LEFT, TOP);
@@ -127,6 +155,8 @@ function draw() {
 			resultStr = winner + " is the winner!"
 		}
 
-		createP(resultStr).style('color', '#000').style('font-size', '32pt');
+		p = createP(resultStr).style('color', '#000').style('font-size', '32pt');
+		btn = createButton('Play again?');
+		btn.mousePressed(restart);
 	}
 }

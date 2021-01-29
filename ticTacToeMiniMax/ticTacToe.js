@@ -16,6 +16,9 @@ let moves = 0;
 let bGameOver = false;
 let winner = null;
 
+let p;
+let btn;
+
 
 function isGameOver(){
 	// horizontal
@@ -69,6 +72,30 @@ function mousePressed(){
 			curPlayer = ai;
 		}
 	}
+}
+
+
+function restart(){
+	p.remove();
+	btn.remove();
+
+	// draw board
+	clear();
+	background(220);
+	line(0, y, width,y);
+	line(0, 2* y, width , 2*y);
+	line(x, 0, x, height);
+	line(x*2, 0, x*2, height);
+
+	board = [['', '', ''], ['', '', ''], ['', '', '']];
+
+	curPlayer = 0;
+	moves = 0;
+
+	bGameOver = false;
+	winner = null;
+
+	loop();
 }
 
 
@@ -137,6 +164,8 @@ function draw() {
 			}
 		}
 
-		createP(resultStr).style('color', '#000').style('font-size', '32pt');
+		p = createP(resultStr).style('color', '#000').style('font-size', '32pt');
+		btn = createButton("Play again?");
+		btn.mousePressed(restart);
 	}
 }

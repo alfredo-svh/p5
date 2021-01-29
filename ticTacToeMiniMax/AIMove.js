@@ -37,7 +37,7 @@ function minimax(board, bIsAITurn, totMoves, alpha, beta){
 		for(let j=0; j<3;j++){
 			if(board[i][j] == ''){
 				board[i][j] = players[int(bIsAITurn)];
-				let curScore = minimax(board, !bIsAITurn, totMoves+1);
+				let curScore = minimax(board, !bIsAITurn, totMoves+1, alpha, beta);
 				board[i][j] = '';
 
 				if(bIsAITurn){
