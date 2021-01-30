@@ -46,27 +46,27 @@ class Ball{
 		let distHuman = humanY - nextY;
 
 		// AI pad collision
-		if(nextX <= 30 && abs(distAI) <= padHalfLen + 10 && this.x > 30){
+		if(nextX <= 30 && abs(distAI) <= padHalfLen + 20 && this.x > 30){
 			// flip the direction of its speed
 			nextX = 60 - nextX;
 			this.speedX = - (this.speedX * SPEEDINCREASE);
 
 			// calculate new y direction based on the part of the paddle hit
-			this.speedY =  tan(distAI*45 / padHalfLen) * this.speedX;
+			this.speedY =  tan(distAI*45 / (padHalfLen+20)) * this.speedX;
 			nextY = this.y + this.speedY;
 		}
 		// human pad collision
-		else if(nextX >= WIDTH - 30 && abs(distHuman ) <= padHalfLen + 10 && this.x < WIDTH - 30){
+		else if(nextX >= WIDTH - 30 && abs(distHuman ) <= padHalfLen + 20 && this.x < WIDTH - 30){
 			// flip the direction of its speed
 			nextX = 2*WIDTH- 60 - nextX;
 			this.speedX = - (this.speedX * SPEEDINCREASE);
 
 			// calculate new y direction based on the part of the paddle hit
-			this.speedY = tan(distHuman*45 / padHalfLen) * this.speedX;
+			this.speedY = tan(distHuman*45 / (padHalfLen+20)) * this.speedX;
 			nextY = this.y + this.speedY;
 		}
 		// top wall collision
-		else if(nextY <= 10){
+		if(nextY <= 10){
 			nextY = 20 - nextY;
 			this.speedY = - this.speedY;
 		}
