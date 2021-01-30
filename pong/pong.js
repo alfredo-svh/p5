@@ -118,6 +118,7 @@ function restart(){
 	btn.remove();
 
 	loop();
+	frameRate(60);
 }
 
 
@@ -127,6 +128,7 @@ function setup() {
 	fill(255);
 	stroke(255);
 	angleMode(DEGREES);
+	frameRate(60);
 
 	padLen = HEIGHT / 5;
 	padHalfLen = HEIGHT / 10;
