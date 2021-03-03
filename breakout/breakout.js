@@ -8,13 +8,14 @@
 
 // TODO
 // - improve brick collisions (if no brick around to it)
+// - comment code
 
 
 
 const HEIGHT = 550;
 const WIDTH = 1000;
 const BRICKCOLS = 14;
-const SPEEDINCREASE = 1.5;
+const SPEEDINCREASE = 1.3;
 const INITIALSPEED = 5;
 
 
