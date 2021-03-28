@@ -939,7 +939,7 @@ function keyPressed(){
 /* Initializing functions */
 
 function preload(){
-	backgroundImg = loadImage('assets/background.png');
+	backgroundImg = loadImage('assets/background.PNG');
 	pacmanImg = loadImage('assets/pacman.png');
 	pacmanImgRight = loadImage('assets/pacmanRight.png');
 	pacmanImgLeft = loadImage('assets/pacmanLeft.png');
