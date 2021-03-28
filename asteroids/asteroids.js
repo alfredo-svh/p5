@@ -370,6 +370,7 @@ function handleInput(){
 	if(keyIsDown(RIGHT_ARROW)){
 		ship.rotateRight();
 	}
+	
 	if(keyIsDown(LEFT_ARROW)){
 		ship.rotateLeft();
 	}
@@ -387,6 +388,7 @@ function keyPressed(){
 	switch(keyCode){
 		case ENTER:
 			ship.hyperSpace();
+			break;
 			
 		case 32:
 			ship.fire();
