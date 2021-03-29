@@ -23,6 +23,7 @@ const Directions = Object.freeze({
     RIGHT: 	4
 });
 
+bGameOver = false;
 highScore = 0;
 
 
@@ -984,7 +985,6 @@ function setup() {
 	
 	lives = 5;
 	score = 0;
-	bGameOver = false;
 	bLifeLost = false;
 	curLevel = 1;
 	level = new Level();
@@ -1086,7 +1086,7 @@ function draw() {
 	level.lastDotTimer++;
 
 	if(eatenSoundLoop.isLooping() && !blinky.isEaten && !pinky.isEaten && !inky.isEaten && !clyde.isEaten){
-		eatenSound.stop();
+		eatenSoundLoop.stop();
 		if(pacman.hasPowerUp){
 			frightSoundLoop.loop();
 		}
