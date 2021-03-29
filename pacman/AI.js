@@ -207,7 +207,7 @@ function fleeStateFun(thisGhost){
 
 function eatenStateFun(thisGhost){
 
-	if(thisGhost.j == 13 && thisGhost.i < 17){
+	if(thisGhost.j == 13 && thisGhost.i < 17 && thisGhost.i > 8){
 		thisGhost.x = WIDTH / 2;
 		thisGhost.y += MAXSPEED;
 		thisGhost.i = posToTile(thisGhost.y);

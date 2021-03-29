@@ -7,7 +7,7 @@ A Pac-Man clone
 
 
 // TODO
-// fix eaten path
+// moveToTarget() bug?
 // ghost fright flash?
 // inbox bouncing?
 // pause game?
