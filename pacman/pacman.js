@@ -7,6 +7,7 @@ A Pac-Man clone
 
 
 // TODO
+// fix eaten path
 // ghost fright flash?
 // inbox bouncing?
 // pause game?
@@ -115,6 +116,7 @@ function restartGame(){
 
 	beginningSound.play();
 	startPause = true;
+	newStartTime = millis();
 
 	clear();
 	background(backgroundImg);
@@ -1257,10 +1259,11 @@ function draw() {
 	text('HIGH SCORE', WIDTH / 2, 5);
 	text(highScore.toString(), WIDTH / 2, 40);
 	text(score.toString(), 120, 40);
-	text(curLevel.toString(), WIDTH/2, HEIGHT - 40);
+	text('LEVEL', WIDTH - 120, 5);
+	text(curLevel.toString(), WIDTH - 120, 40);
 
 	for(let i =0; i < lives; i++){
-		image(pacmanImgLeft, 50 + i*30, HEIGHT - CELLSIZE);
+		image(pacmanImgLeft, 50 + i*30, HEIGHT - 40);
 	}
-	image(level.fruitImg, WIDTH - 75, HEIGHT - CELLSIZE)
+	image(level.fruitImg, WIDTH - 75, HEIGHT - 40)
 }
