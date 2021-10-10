@@ -14,7 +14,7 @@ const MAXHEIGHTDIFF = 5.5 * TILELENGTH;
 const MINHEIGHTDIFF = -0.5 * TILELENGTH;
 
 const CAMERASPEED = 595; //949 pixels per second == 11.9 tiles per second
-const GRAVITY = CAMERASPEED / 7.3;  // cameraspeed / 7
+const GRAVITY = CAMERASPEED / 7.3 * 60;
 const JUMPVEL = -CAMERASPEED * 1.6;
 const ROTATION = Math.PI * 2.5;
 
@@ -47,7 +47,7 @@ class Player{
 
 	updateSpeed(){
 		if(this.isJumping){
-			this.velY += GRAVITY;
+			this.velY += GRAVITY * deltaTime / 1000;
 			this.rotation += ROTATION * deltaTime / 1000;
 		}
 		else{

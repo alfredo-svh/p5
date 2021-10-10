@@ -8,8 +8,7 @@
 */
 
 
-//TODO
-// - fix 30 fps: jumpvel, camera movement
+// TODO
 // - practice mode?
 // - add music?
 // - refactor: use global constants?
@@ -114,6 +113,7 @@ function setup() {
 	startLava = 0;
 
 	//DEBUG
+	// frameRate(9);
 	// maxy = 0;
 }
 
