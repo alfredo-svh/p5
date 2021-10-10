@@ -9,11 +9,9 @@
 
 
 //TODO
-// - add music?
-// - tweak camera movement?
-// - tweak gravity & jumpvel?
-// - fix stuttering?
+// - fix 30 fps: jumpvel, camera movement
 // - practice mode?
+// - add music?
 // - refactor: use global constants?
 
 
@@ -55,9 +53,7 @@ function winScreen(){
 	noLoop();
 }
 
-/* P5 functions */
-
-function mousePressed(){
+function handlePressed(){
 	if(bGameOver || bWin){
 		return;
 	}
@@ -70,12 +66,34 @@ function mousePressed(){
 	player.jump();
 }
 
-function mouseReleased(){
+function handleReleased(){
 	if(bWin || bGameOver){
 		return;
 	}
 
 	isMouseReleased = true;
+}
+
+/* P5 functions */
+
+function keyPressed(){
+	if(keyCode == 32){
+		handlePressed();
+	}
+}
+
+function keyReleased(){
+	if(keyCode == 32){
+		handleReleased();
+	}
+}
+
+function mousePressed(){
+	handlePressed();
+}
+
+function mouseReleased(){
+	handleReleased();
 }
 
 function preload(){
