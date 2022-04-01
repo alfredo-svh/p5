@@ -111,11 +111,13 @@ class LevelOne extends Level{
 
 		super(1, 168, mario, beams, ladders, 4500, backgroundLevelOneImg);
 
-		this.startHammers = hammers;
-		this.hammers = [...hammers];
+		this.hammers = hammers;
 		this.barrels = [];
 		this.sparks = [];
 		this.lastBarrelSpawn = millis();
+
+		//TODO remove
+		this.lastSparkSpawn = millis();
 	}
 
 	checkWin(){
@@ -129,7 +131,7 @@ class LevelOne extends Level{
 		this.mario = new Mario(50, HEIGHT - 3 * BEAMWIDTH);
 		this.sparks = [];
 		this.barrels = [];
-		this.hammers = this.startHammers;
+		this.hammers = [new Hammer(504, 573), new Hammer(48, 291)];;
 		this.bonus = this.initialBonus;
 		this.lastBarrelSpawn = millis();
 	}
@@ -143,6 +145,14 @@ class LevelOne extends Level{
 			this.barrels.push(new Barrel());
 			this.lastBarrelSpawn = millis();
 		}
+		
+		//TODO remove
+		if(millis() - this.lastSparkSpawn >= 5000 && this.sparks.length < 5){
+			this.sparks.push(new Spark());
+			this.lastSparkSpawn = millis();
+		}
+
+
 	
 		for(let barrel of this.barrels){
 			barrel.draw();
