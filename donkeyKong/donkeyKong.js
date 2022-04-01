@@ -28,10 +28,8 @@ highScore = 0;
 // - apply logic to spark's and barrel's use of ladders
 // - ensure sparks can move between beams but can't fall from them.
 // - ensure falls, fire over oil barrel, 0 bonus kill mario
-// - win condition
-// - jump over enemies grants points!!!
-// - scoring
-// - restart game
+// - scoring: jump over enemies grants points!!!
+// - new levels??
 
 
 /* Helper functions */
@@ -52,16 +50,15 @@ function lostLife(){
 }
 
 function restartGame(){
-	// lives = 5;
-	// score = 0;
-	// bGameOver = false;
-	// bLifeLost = false;
-	// time = 0;
+	lives = 2;
+	time = 0;
+	nextSecond = 1000;
+	startPause = false;
+	newStartTime = 0;
+	
+	level = new LevelOne();
 
-	// clear();
-	// background(backgroundImg);
-
-	// loop();
+	loop();
 }
 
 
@@ -107,11 +104,10 @@ class LevelOne extends Level{
 		let ladders = [new Ladder(240, 639, 744, true), new Ladder(552, 657, 729), new Ladder(96, 558, 630), new Ladder(288, 546, 642), new Ladder(192, 438, 552, true),
 					   new Ladder(336, 447, 543), new Ladder(552, 459, 531), new Ladder(96, 360, 432), new Ladder(216, 354, 438), new Ladder(504, 336, 456, true),
 					   new Ladder(264, 252, 351, true), new Ladder(552, 261, 333), new Ladder(384, 168, 252)];
-		let hammers = [new Hammer(504, 573), new Hammer(48, 291)];
 
 		super(1, 168, mario, beams, ladders, 4500, backgroundLevelOneImg);
 
-		this.hammers = hammers;
+		this.hammers = [new Hammer(504, 573), new Hammer(48, 291)];
 		this.barrels = [];
 		this.sparks = [];
 		this.lastBarrelSpawn = millis();
@@ -467,12 +463,18 @@ class Mario extends BasePhysicsActor{
 		// console.log(this.initY - this.maxY);
 		// console.log(this.maxX);
 
-		push();
-		// strokeWeight(3);
-		stroke("blue");
-		fill("red");
-		square(this.x, this.y, this.h);
-		pop();
+		if(this.facingLeft){
+			image(chapulinImg, this.x, this.y);
+		}
+		else{
+			image(chapulinRightImg, this.x, this.y);
+		}
+		// push();
+		// // strokeWeight(3);
+		// stroke("blue");
+		// fill("red");
+		// square(this.x, this.y, this.h);
+		// pop();
 	}
 }
 
@@ -812,6 +814,8 @@ function preload(){
 	hammerImg = loadImage("assets/hammer.png");
 	barrelSideImg = loadImage("assets/barrel_side.gif")
 	barrelTopImg = loadImage("assets/barrel_top.gif")
+	chapulinImg = loadImage("assets/chapulin.png")
+	chapulinRightImg = loadImage("assets/chapulin-right.png")
 }
 
 
@@ -828,10 +832,6 @@ function setup() {
 	newStartTime = 0;
 	
 	level = new LevelOne();
-
-	//TODO remove DEBUG
-	// level.barrels = [new Barrel()];
-	// level.sparks = [new Spark()];
 }
 
 
@@ -877,6 +877,7 @@ function draw() {
 	}
 	else if(level.checkWin()){
 		noLoop();
+		bGameOver = true;
 		stroke("white");
 		fill("white");
 		textSize(40);
