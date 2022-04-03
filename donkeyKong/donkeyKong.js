@@ -22,13 +22,14 @@ highScore = 0;
 
 
 // TODO
-// - tweak mario climbing half ladders behavior
-// - keep Mario from jumping between sets of beams
-// - tweak collisions, specifically spark
 // - apply logic to spark's and barrel's use of ladders
-// - ensure sparks can move between beams but can't fall from them.
+// - finish barrel's movements, behaviors -- when it's blue, when it's crazy, etc.
+// - ensure blue barrels create spark enemy when they collide with oil drum
+// - keep Mario from jumping between sets of beams
+// - tweak collisions, specifically spark, mario
 // - ensure falls, fire over oil barrel, 0 bonus kill mario
 // - scoring: jump over enemies grants points!!!
+// - finish graphics: spark, mario (chapulin), donkey kong (cuajinais), pauline (minina)
 // - new levels??
 
 
@@ -111,6 +112,7 @@ class LevelOne extends Level{
 		this.barrels = [];
 		this.sparks = [];
 		this.lastBarrelSpawn = millis();
+		this.barrelsThrown = 0;
 
 		//TODO remove
 		this.lastSparkSpawn = millis();
@@ -124,22 +126,32 @@ class LevelOne extends Level{
 		return false;
 	}
 	resetLevel(){
-		this.mario = new Mario(50, HEIGHT - 3 * BEAMWIDTH);
+		this.mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
 		this.sparks = [];
 		this.barrels = [];
 		this.hammers = [new Hammer(504, 573), new Hammer(48, 291)];;
 		this.bonus = this.initialBonus;
 		this.lastBarrelSpawn = millis();
+		this.barrelsThrown = 0;
 	}
 
 	draw(){
 		clear();
 		background(this.background);
 
+		// If barrelsTThrown = 0: send first barrel down.
+		//TODO
+		if(this.barrelsThrown == 0){
+			this.barrels.push(new Barrel());
+			this.barrelsThrown++;
+		}
+
 		//spawn barrel
 		if(millis() - this.lastBarrelSpawn >= 2000){
+			//TODO if barrelsThrown % 8 == 0: Send blue barrel (except when 5 sparks)
 			this.barrels.push(new Barrel());
 			this.lastBarrelSpawn = millis();
+			this.barrelsThrown++;
 		}
 		
 		//TODO remove
@@ -188,8 +200,9 @@ class BasePhysicsActor{
 
 	isOnTop(obj){
 		if(obj instanceof Beam){
-			var isBetweenX = this.x + this.w / 2 >= obj.x && this.x + this.w / 2 <= obj.x + obj.w;
-			var isBetweenY = this.y + this.h >= obj.y && this.y + this.h < obj.y + BEAMWIDTH;
+			let x = this.x + this.w / 2
+			var isBetweenX = x >= obj.x && x <= obj.x + obj.w;
+			var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH;
 			if (isBetweenX && isBetweenY){
 				this.y = obj.y - this.h;
 				return true;
@@ -295,12 +308,12 @@ class Mario extends BasePhysicsActor{
 
 		if(keyIsDown(UP_ARROW) && !this.hasHammer){
 			if(this.onLadder){
-				// if(this.isOnTopOfLadder()){
-				// 	this.onLadder = false;
-				// }
-				// else{
+				if(this.ladderClimbing.isHalf && this.y <= this.ladderClimbing.y1 + BEAMWIDTH){
+					this.velY = 0;
+				}
+				else{
 					this.velY = -MARIOSPEED;
-				// }
+				}
 			}
 			else if(this.isGrounded && this.isOnBottomOfLadder()){
 				this.onLadder = true;
@@ -580,6 +593,7 @@ class Spark extends BasePhysicsActor{
 		super(100, HEIGHT - BEAMWIDTH * 2, BEAMWIDTH, BEAMWIDTH);
 		this.onLadder = false;
 		this.ladderClimbing = null;
+		this.currentBeamIndex = 0;
 	}
 
 	checkCollision(){
@@ -621,6 +635,7 @@ class Spark extends BasePhysicsActor{
 				this.ladderClimbing = null;
 				this.onLadder = false;
 				this.velY = 0;
+				this.setBeam(true);
 			}
 			//if below bottom:
 			else if(this.y + this.h >= this.ladderClimbing.y2){
@@ -630,6 +645,49 @@ class Spark extends BasePhysicsActor{
 				this.ladderClimbing = null;
 				this.onLadder = false;
 				this.velY = 0;
+				this.setBeam(true);
+			}
+		}
+	}
+	
+	isOnBeam(beamIndex){
+		if(beamIndex < 0 || beamIndex >= level.beams.length){
+			return false;
+		}
+
+		let beam = level.beams[beamIndex];
+		let x = this.x + (this.w / 2);
+		if(x >= beam.x && x <= beam.x + beam.w){
+			this.currentBeamIndex = beamIndex;
+			this.y = beam.y - this.h;
+			return true;
+		}
+		return false;
+	}
+
+	setBeam(afterLadder=false){
+		if(afterLadder){
+			for(let i =0; i < level.beams.length; i++){
+				if(this.isOnTop(level.beams[i])){
+					this.currentBeamIndex = i;
+					return;
+				}
+			}
+		}
+
+		// if we are not on a beam, we fell. We have to go back to the previous one
+		if(!(this.isOnBeam(this.currentBeamIndex) ||
+			 this.isOnBeam(this.currentBeamIndex+1) ||
+			 this.isOnBeam(this.currentBeamIndex-1))){
+
+			let beam = level.beams[this.currentBeamIndex]
+			if(this.x < beam.x){
+				this.x = beam.x;
+				this.velX = MARIOSPEED;
+			}
+			else{
+				this.x = beam.x + beam.w;
+				this.velX = -MARIOSPEED;
 			}
 		}
 	}
@@ -643,6 +701,10 @@ class Spark extends BasePhysicsActor{
 
 		this.x += this.velX * deltaTime / 1000;
 		this.y += this.velY * deltaTime / 1000;
+
+		if(!this.onLadder){
+			this.setBeam()
+		}
 
 		if(this.x < 0){
 			this.x = 0;
