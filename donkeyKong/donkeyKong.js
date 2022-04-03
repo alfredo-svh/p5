@@ -10,8 +10,8 @@ A Donkey Kong arcade game clone
 const HEIGHT = 768;
 const WIDTH = 672;
 const BEAMWIDTH = 24;
-const MARIOSPEED = 100;
-const BARRELSPEED = 120;
+const MARIOSPEED = 110;
+const BARRELSPEED = 180;
 const JUMPSTRENGTH = 300; // og 180
 // const GRAVITY = 400; // og = 150
 const GRAVITY = 1000; // og = 150
@@ -27,10 +27,10 @@ highScore = 0;
 // - - keep Mario from jumping between sets of beams
 // - - make sure can jump over enemies
 // - - tweak collisions
-// - crazy barrels?
-// - ensure fire over oil barrel kills mario
+// - ensure fire over oil barrel, donkey kong kill mario
 // - scoring: jump over enemies grants points!!!
 // - finish graphics: spark, mario (chapulin), donkey kong (cuajinais), pauline (minina)
+// - add sound
 // - new levels??
 
 
@@ -202,7 +202,7 @@ class BasePhysicsActor{
 		if(obj instanceof Beam){
 			let x = this.x + this.w / 2
 			var isBetweenX = x >= obj.x && x <= obj.x + obj.w;
-			var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH;
+			var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH / 2;
 			if (isBetweenX && isBetweenY){
 				this.y = obj.y - this.h;
 				return true;
@@ -401,7 +401,6 @@ class Mario extends BasePhysicsActor{
 			}
 		}
 
-		// TODO spark
 		for(let spark of level.sparks){
 			if(isThereCollision(this, spark)){
 				lostLife();
@@ -501,8 +500,6 @@ class Mario extends BasePhysicsActor{
 	}
 }
 
-// TODO first barrel rolls sraight through
-// TODO Except if blue: if barrel below Mario go out of bounds (don't reverse). Then kill.
 class Barrel extends BasePhysicsActor{
 	constructor(crazy=false, blue=false, x = 200, y = 222){
 		super(x, y, 36, 30);
@@ -550,7 +547,7 @@ class Barrel extends BasePhysicsActor{
 						this.isFalling = false;
 
 						// if below mario, roll out
-						if(this.blue || this.y <= level.mario.y){
+						if(this.blue || this.y + this.h <= level.mario.y + level.mario.h){
 							this.direction *= -1;
 						}
 						return;
@@ -597,7 +594,7 @@ class Barrel extends BasePhysicsActor{
 		this.checkCollision();
 
 		if(this.isGrounded){
-			this.velX = MARIOSPEED * this.direction;
+			this.velX = BARRELSPEED * this.direction;
 			this.velY = 0;
 		}
 		else if(this.onLadder){
@@ -652,8 +649,6 @@ class FirstBarrel extends Barrel{
 	}
 }
 
-//TODO only spawn from blue barrels?
-// TODO max number of fireballs at once?
 class Spark extends BasePhysicsActor{
 	constructor(){
 		super(100, HEIGHT - BEAMWIDTH * 2, BEAMWIDTH, BEAMWIDTH);
@@ -851,10 +846,8 @@ class Hammer{
 	}
 
 	updatePosition(){
-		//TODO fix values based on mario's direction
 
 		//hammer up
-		//TODO tweak
 		if((millis() % 500) > 250){
 			this.isDown = false;
 			this.x = level.mario.x + 12;
@@ -880,7 +873,6 @@ class Hammer{
 			this.updatePosition();
 			this.checkCollision();
 		}
-		//TODO tweak rotation?
 		//TODO make mario hold it lower?
 		if(this.isDown){
 			push();
@@ -914,7 +906,6 @@ class Beam{
 	}
 }
 
-// TODO mario can't fully climb half-ladders
 class Ladder{
 	constructor(x1, y1, y2, isHalf=false){
 		this.x1 = x1;
