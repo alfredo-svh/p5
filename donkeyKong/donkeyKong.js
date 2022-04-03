@@ -12,8 +12,9 @@ const WIDTH = 672;
 const BEAMWIDTH = 24;
 const MARIOSPEED = 100;
 const BARRELSPEED = 120;
-const JUMPSTRENGTH = 180;
-const GRAVITY = 400; // og = 150
+const JUMPSTRENGTH = 300; // og 180
+// const GRAVITY = 400; // og = 150
+const GRAVITY = 1000; // og = 150
 
 bGameOver = false;
 bLifeLost = false;
@@ -22,12 +23,12 @@ highScore = 0;
 
 
 // TODO
-// - apply logic to spark's and barrel's use of ladders
-// - finish barrel's movements, behaviors -- when it's blue, when it's crazy, etc.
-// - ensure blue barrels create spark enemy when they collide with oil drum
-// - keep Mario from jumping between sets of beams
-// - tweak collisions, specifically spark, mario
-// - ensure falls, fire over oil barrel, 0 bonus kill mario
+// - tweak constants (gravity, jumpstrength, mariospeed, barrelspeed, sparkspeed):
+// - - keep Mario from jumping between sets of beams
+// - - make sure can jump over enemies
+// - - tweak collisions
+// - crazy barrels?
+// - ensure fire over oil barrel kills mario
 // - scoring: jump over enemies grants points!!!
 // - finish graphics: spark, mario (chapulin), donkey kong (cuajinais), pauline (minina)
 // - new levels??
@@ -52,8 +53,6 @@ function lostLife(){
 
 function restartGame(){
 	lives = 2;
-	time = 0;
-	nextSecond = 1000;
 	startPause = false;
 	newStartTime = 0;
 	
@@ -113,9 +112,6 @@ class LevelOne extends Level{
 		this.sparks = [];
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
-
-		//TODO remove
-		this.lastSparkSpawn = millis();
 	}
 
 	checkWin(){
@@ -140,45 +136,49 @@ class LevelOne extends Level{
 		background(this.background);
 
 		// If barrelsTThrown = 0: send first barrel down.
-		//TODO
 		if(this.barrelsThrown == 0){
-			this.barrels.push(new Barrel());
+			this.barrels.push(new FirstBarrel());
 			this.barrelsThrown++;
 		}
 
 		//spawn barrel
 		if(millis() - this.lastBarrelSpawn >= 2000){
-			//TODO if barrelsThrown % 8 == 0: Send blue barrel (except when 5 sparks)
-			this.barrels.push(new Barrel());
+			if(this.barrelsThrown % 8 == 0 && this.sparks.length < 5){
+				this.barrels.push(new Barrel(false, true));
+			}
+			else{
+				this.barrels.push(new Barrel());
+			}
 			this.lastBarrelSpawn = millis();
 			this.barrelsThrown++;
 		}
-		
-		//TODO remove
-		if(millis() - this.lastSparkSpawn >= 5000 && this.sparks.length < 5){
-			this.sparks.push(new Spark());
-			this.lastSparkSpawn = millis();
-		}
-
 
 	
 		for(let barrel of this.barrels){
 			barrel.draw();
 		}
-	
+		
+		
 		for(let spark of this.sparks){
 			spark.draw();
 		}
-	
+		
 		for(let hammer of this.hammers){
 			hammer.draw();
 		}
-	
+		
 		this.mario.draw();
-
+		
 		// Delete barrels
 		for(let i=0; i < this.barrels.length; i++){
 			let barrel = this.barrels[i];
+			if(barrel.y + barrel.h >= HEIGHT - BEAMWIDTH && barrel.x <= 96){
+				if(barrel.blue && this.sparks.length < 5){
+					this.sparks.push(new Spark());
+				}
+				this.barrels.splice(i, 1);
+				break;
+			}
 			if(barrel.x + barrel.w < 0 || barrel.x > WIDTH){
 				this.barrels.splice(i, 1);
 				break;
@@ -195,7 +195,7 @@ class BasePhysicsActor{
 		this.h = h;
 		this.velX = 0;
 		this.velY = 0;
-		this.isGrounded = false;
+		this.isGrounded = true;
 	}
 
 	isOnTop(obj){
@@ -350,6 +350,7 @@ class Mario extends BasePhysicsActor{
 	}
 
 	checkCollision(){
+		let grounded = false;
 		if(!this.onLadder){
 			// beams
 			for(let beam of level.beams){
@@ -360,14 +361,21 @@ class Mario extends BasePhysicsActor{
 						if(dX > this.maxX){
 							this.maxX = dX;
 						}
+					} // DEBUG
+
+					if(!this.isJumping && !this.isGrounded){
+						lostLife();
+						return;
 					}
 
-					this.isGrounded = true;
+					grounded = true;
 					this.isJumping = false;
 
 					break;
 				}
 			}
+
+			this.isGrounded = grounded;
 
 			//hammer
 			if(!this.hasHammer){
@@ -425,7 +433,7 @@ class Mario extends BasePhysicsActor{
 		else{
 			this.velY = 0;
 		}
-		this.isGrounded = false;
+		// this.isGrounded = false;
 		
 		this.checkCollision();
 		this.handleInput();
@@ -446,6 +454,7 @@ class Mario extends BasePhysicsActor{
 				if(!this.ladderClimbing.isHalf){
 					this.ladderClimbing = null;
 					this.onLadder = false;
+					this.isGrounded = true;
 				}
 			}
 			//if below bottom:
@@ -455,6 +464,7 @@ class Mario extends BasePhysicsActor{
 				// if on ground, ladder reference = null, onladder = false
 				this.ladderClimbing = null;
 				this.onLadder = false;
+				this.isGrounded = true;
 			}
 		}
 		
@@ -494,9 +504,8 @@ class Mario extends BasePhysicsActor{
 // TODO first barrel rolls sraight through
 // TODO Except if blue: if barrel below Mario go out of bounds (don't reverse). Then kill.
 class Barrel extends BasePhysicsActor{
-	constructor(first=false, crazy=false, blue=false){
-		super(200, 222, 36, 30);
-		this.first = first;
+	constructor(crazy=false, blue=false, x = 200, y = 222){
+		super(x, y, 36, 30);
 		this.crazy = crazy;
 		this.blue = blue;
 		this.onLadder = false;
@@ -512,6 +521,24 @@ class Barrel extends BasePhysicsActor{
 		return false;
 	}
 
+	shouldTakeLadder(){
+		let marioY = level.mario.y + level.mario.h;
+		let barrelY = this.y + this.h;
+		let maxDiffPerHorizontalLevel = 39;
+		if(marioY <= barrelY || marioY - barrelY <= maxDiffPerHorizontalLevel){
+			return false;
+		}
+
+		if(keyIsDown(LEFT_ARROW) && this.x < level.mario.x){
+			return true;
+		}
+
+		if(keyIsDown(RIGHT_ARROW) && this.x > level.mario.x){
+			return true;
+		}
+		return false;
+	}
+
 	checkCollision(){
 		// rolling on a beam or falling
 		if(!this.onLadder){
@@ -521,18 +548,31 @@ class Barrel extends BasePhysicsActor{
 					this.isGrounded = true;
 					if(this.isFalling){
 						this.isFalling = false;
-						this.direction *= -1;
+
+						// if below mario, roll out
+						if(this.blue || this.y <= level.mario.y){
+							this.direction *= -1;
+						}
+						return;
 					}
 					//check if we can go down a ladder
 					for(let ladder of level.ladders){
 						if(this.isOnTop(ladder)){
-							this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
-							this.onLadder = true;
-							this.isGrounded = false;
+							if(this.ladderDescending){
+								return;
+							}
+
 							this.ladderDescending = ladder;
+							
+							if(Math.random() < 0.75 && this.shouldTakeLadder()){
+								this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
+								this.onLadder = true;
+								this.isGrounded = false;
+							}
 							return;
 						}
 					}
+					this.ladderDescending = null;
 					return;
 				}
 			}
@@ -575,7 +615,7 @@ class Barrel extends BasePhysicsActor{
 	draw(){
 		this.updatePosition();
 
-		if(this.ladderDescending){
+		if(this.onLadder){
 			image(barrelSideImg, this.x - 6, this.y)
 		}
 		else{
@@ -585,7 +625,33 @@ class Barrel extends BasePhysicsActor{
 	}
 }
 
-//TODO cannot fall from ledge
+class FirstBarrel extends Barrel{
+	constructor(){
+		super(false, true, 120, 222);
+		this.isFalling = true;
+		this.direction = 0;
+	}
+
+	checkCollision(){
+		if(this.isOnTop(level.beams[0])){
+			this.isGrounded = true;
+			this.isFalling = false;
+			this.direction = -1;
+		}
+	}
+
+	draw(){
+		this.updatePosition();
+
+		if(this.isGrounded){
+			image(barrelTopImg, this.x - 6, this.y)
+		}
+		else{
+			image(barrelSideImg , this.x, this.y)
+		}
+	}
+}
+
 //TODO only spawn from blue barrels?
 // TODO max number of fireballs at once?
 class Spark extends BasePhysicsActor{
@@ -598,41 +664,44 @@ class Spark extends BasePhysicsActor{
 
 	checkCollision(){
 		if(!this.onLadder){
-			// collision with beam
-			// for(let beam of level.beams){
-			// 	if(this.isOnTop(beam)){
-			// 		break;
-			// 	}
-			// }
-
 			for(let ladder of level.ladders){
-				//TODO make more rare
 				if(this.isOnBottom(ladder)){
-					if(level.mario.y < this.y - BEAMWIDTH){
+					if(this.ladderClimbing){
+						return;
+					}
+					this.ladderClimbing = ladder;
+					if(Math.random() < 0.2){
 						this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
 						this.onLadder = true;
-						this.ladderClimbing = ladder;
 						this.velY = -MARIOSPEED;
 						this.velX = 0;
 					}
+					return;
 				}
 				else if(this.isOnTop(ladder)){
-					if(level.mario.y > this.y - BEAMWIDTH){
-						this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
-						this.onLadder = true;
+					if(level.mario.y + level.mario.h > this.y + this.h){
+						if(this.ladderClimbing){
+							return;
+						}
 						this.ladderClimbing = ladder;
-						this.velY = MARIOSPEED;
-						this.velX = 0;
+						if(Math.random() < 0.2){
+							this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
+							this.onLadder = true;
+							this.velY = MARIOSPEED;
+							this.velX = 0;
+						}
+						return;
 					}
 				}
 			}
+			this.ladderClimbing = null;
 		}
 		else{
 			if(this.y + this.h <= this.ladderClimbing.y1){
 				//return y to max position.
 				this.y = this.ladderClimbing.y1 - this.h;
 				// If on ground, ladder reference = null, onladder = false,
-				this.ladderClimbing = null;
+				// this.ladderClimbing = null;
 				this.onLadder = false;
 				this.velY = 0;
 				this.setBeam(true);
@@ -642,7 +711,7 @@ class Spark extends BasePhysicsActor{
 				// return y to min position
 				this.y = this.ladderClimbing.y2 - this.h;
 				// if on ground, ladder reference = null, onladder = false
-				this.ladderClimbing = null;
+				// this.ladderClimbing = null;
 				this.onLadder = false;
 				this.velY = 0;
 				this.setBeam(true);
@@ -887,9 +956,8 @@ function setup() {
 	stroke("white");
 	fill("white");
 	
+	bonusTimer = 0;
 	lives = 2;
-	time = 0;
-	nextSecond = 1000;
 	startPause = false;
 	newStartTime = 0;
 	
@@ -903,8 +971,6 @@ function draw() {
 	if(startPause){
 		if(millis() - newStartTime > 4000){
 			level.resetLevel();
-			time = 0;
-			nextSecond = 1000;
 			startPause = false;
 		}
 		else{
@@ -914,7 +980,16 @@ function draw() {
 
 	level.draw();
 
-	// handle mario being hit
+	if(millis() - bonusTimer >= 2000){
+		bonusTimer = millis();
+		level.bonus -= 100;
+
+		if(level.bonus == 0){
+			lostLife();
+		}
+	}
+
+	// handle mario death
 	if(bLifeLost){
 		bLifeLost = false;
 
@@ -922,7 +997,7 @@ function draw() {
 			bGameOver = true;
 			lives = 0;
 			noLoop();
-			stroke("white");
+			stroke("yellow");
 			fill("white");
 			textSize(40);
 			text("GAME OVER", WIDTH / 2, HEIGHT / 2 - 40);
@@ -940,7 +1015,7 @@ function draw() {
 	else if(level.checkWin()){
 		noLoop();
 		bGameOver = true;
-		stroke("white");
+		stroke("yellow");
 		fill("white");
 		textSize(40);
 		text("YOU WON!", WIDTH / 2, HEIGHT / 2 - 40);
@@ -950,12 +1025,8 @@ function draw() {
 		fill("white");
 	}
 
+	
 	// PRINT SCORE INFO
-	time+= deltaTime;
-	if(level.bonus > 0 && time > nextSecond){
-		level.bonus -= 100;
-		nextSecond += 1000;
-	}
 	highScore = Math.max(highScore, score);
 	textSize(35);
 	textAlign(CENTER, TOP);
