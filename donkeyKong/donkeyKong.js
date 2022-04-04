@@ -6,7 +6,6 @@ A Donkey Kong arcade game clone
 */
 
 
-//TODO play around with barrelspeed and other constants
 const HEIGHT = 768;
 const WIDTH = 672;
 const BEAMWIDTH = 24;
@@ -23,13 +22,8 @@ highScore = 0;
 
 
 // TODO
-// - tweak constants (gravity, jumpstrength, mariospeed, barrelspeed, sparkspeed):
-// - - keep Mario from jumping between sets of beams
-// - - make sure can jump over enemies
-// - - tweak collisions
-// - ensure fire over oil barrel, donkey kong kill mario
-// - scoring: jump over enemies grants points!!!
-// - finish graphics: spark, mario (chapulin), donkey kong (cuajinais), pauline (minina)
+// - finish graphics: mario (chapulin), donkey kong (cuajinais), pauline (minina)
+// - ensure donkey kong kills mario
 // - add sound
 // - new levels??
 
@@ -37,6 +31,13 @@ highScore = 0;
 /* Helper functions */
 
 function isThereCollision(obj1, obj2){
+	if(obj1 instanceof Mario){
+		if(obj1.x + obj1.w  - 12 > obj2.x && obj1.x + 12 < obj2.x + obj2.w && obj1.y + obj1.h > obj2.y && obj1.y < obj2.y + obj2.h){
+			return true;
+		}
+		return false;
+	}
+
 	if(obj1.x + obj1.w > obj2.x && obj1.x < obj2.x + obj2.w && obj1.y + obj1.h > obj2.y && obj1.y < obj2.y + obj2.h){
 		return true;
 	}
@@ -55,6 +56,8 @@ function restartGame(){
 	lives = 2;
 	startPause = false;
 	newStartTime = 0;
+	score = 0;
+	extraLifeAwarded = false;
 	
 	level = new LevelOne();
 
@@ -105,13 +108,14 @@ class LevelOne extends Level{
 					   new Ladder(336, 447, 543), new Ladder(552, 459, 531), new Ladder(96, 360, 432), new Ladder(216, 354, 438), new Ladder(504, 336, 456, true),
 					   new Ladder(264, 252, 351, true), new Ladder(552, 261, 333), new Ladder(384, 168, 252)];
 
-		super(1, 168, mario, beams, ladders, 4500, backgroundLevelOneImg);
+		super(1, 168, mario, beams, ladders, 5000, backgroundLevelOneImg);
 
-		this.hammers = [new Hammer(504, 573), new Hammer(48, 291)];
+		this.hammers = [new Hammer(504, 573), new Hammer(48, 285)];
 		this.barrels = [];
 		this.sparks = [];
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
+		this.fire = null;
 	}
 
 	checkWin(){
@@ -129,6 +133,7 @@ class LevelOne extends Level{
 		this.bonus = this.initialBonus;
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
+		this.fire = null;
 	}
 
 	draw(){
@@ -184,6 +189,13 @@ class LevelOne extends Level{
 				break;
 			}
 		}
+
+		if(this.fire == null && this.sparks.length > 0){
+			this.fire = new Fire();
+		}
+		if(this.fire){
+			this.fire.draw();
+		}
 	}
 }
 
@@ -202,7 +214,13 @@ class BasePhysicsActor{
 		if(obj instanceof Beam){
 			let x = this.x + this.w / 2
 			var isBetweenX = x >= obj.x && x <= obj.x + obj.w;
-			var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH / 2;
+			var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH;
+
+			// Avoid Mario jumping into beam above
+			if(this instanceof Mario){
+				var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH / 2;
+			}
+
 			if (isBetweenX && isBetweenY){
 				this.y = obj.y - this.h;
 				return true;
@@ -255,12 +273,57 @@ class Mario extends BasePhysicsActor{
 		this.hasHammer = false;
 		this.hammerHeld = null;
 		this.facingLeft = true;
+		this.jumpedOver = false;
 
 		//DEBUG
 		this.initY = y;
 		this.maxY = HEIGHT;
 		this.lastX = 0;
 		this.maxX = 0;
+	}
+
+	didJumpOver(){
+		if (this.jumpedOver){
+			return false;
+		}
+
+		// let scanArea = {x: this.x+9, y: this.y + this.h, w: 30, h: 36};
+		// if(this.velX == 0){
+		// 	scanArea = {x: this.x-26, y: this.y + this.h, w: 100, h: 36}
+		// }
+
+		let numberOfBarrelsJumped = 0;
+	
+		for(let barrel of level.barrels){
+			if(this.x + this.w > barrel.x && this.x < barrel.x + barrel.w && this.y + 2 * this.h > barrel.y && this.y < barrel.y + barrel.h){
+				numberOfBarrelsJumped++;
+			}
+		}
+		
+		if(numberOfBarrelsJumped > 0){
+			switch(numberOfBarrelsJumped){
+				case 1:
+					score += 100;
+					break;
+				case 2:
+					score += 300;
+					break;
+				default:
+					score += 500;
+			}
+			this.jumpedOver = true;
+			return true;
+		}
+		
+		for(let spark of level.sparks){
+			if(this.x + this.w > spark.x && this.x < spark.x + spark.w && this.y + 2 * this.h > spark.y && this.y < spark.y + spark.h){
+				score += 100;
+				this.jumpedOver = true;
+				return true;
+			}
+		}
+	
+		return false;
 	}
 
 	// we use this function to know if we can start climbing up a ladder
@@ -356,12 +419,12 @@ class Mario extends BasePhysicsActor{
 			for(let beam of level.beams){
 				if(this.isOnTop(beam)){
 					//DEBUG
-					if(this.isJumping){
-						var dX = this.x - this.lastX;
-						if(dX > this.maxX){
-							this.maxX = dX;
-						}
-					} // DEBUG
+					// if(this.isJumping){
+					// 	var dX = this.x - this.lastX;
+					// 	if(dX > this.maxX){
+					// 		this.maxX = dX;
+					// 	}
+					// } // DEBUG
 
 					if(!this.isJumping && !this.isGrounded){
 						lostLife();
@@ -370,6 +433,7 @@ class Mario extends BasePhysicsActor{
 
 					grounded = true;
 					this.isJumping = false;
+					this.jumpedOver = false;
 
 					break;
 				}
@@ -391,6 +455,10 @@ class Mario extends BasePhysicsActor{
 			}
 		}
 
+		if(this.isJumping && this.velY >= 0){
+			this.didJumpOver();
+		}
+
 		if(level.level == 1){
 			// barrels
 			for(let barrel of level.barrels){
@@ -399,8 +467,16 @@ class Mario extends BasePhysicsActor{
 					return;
 				}
 			}
+
+			if(level.fire){
+				if(isThereCollision(this, level.fire)){
+					lostLife();
+					return;
+				}
+			}
 		}
 
+		//sparks
 		for(let spark of level.sparks){
 			if(isThereCollision(this, spark)){
 				lostLife();
@@ -519,12 +595,7 @@ class Barrel extends BasePhysicsActor{
 	}
 
 	shouldTakeLadder(){
-		let marioY = level.mario.y + level.mario.h;
-		let barrelY = this.y + this.h;
-		let maxDiffPerHorizontalLevel = 39;
-		if(marioY <= barrelY || marioY - barrelY <= maxDiffPerHorizontalLevel){
-			return false;
-		}
+		
 
 		if(keyIsDown(LEFT_ARROW) && this.x < level.mario.x){
 			return true;
@@ -560,8 +631,23 @@ class Barrel extends BasePhysicsActor{
 							}
 
 							this.ladderDescending = ladder;
+
+							// Should barrel take down ladder
+							let marioY = level.mario.y + level.mario.h;
+							let barrelY = this.y + this.h;
+							let maxDiffPerHorizontalLevel = 39;
+							if(marioY <= barrelY || marioY - barrelY <= maxDiffPerHorizontalLevel){
+								return;
+							}
 							
-							if(Math.random() < 0.75 && this.shouldTakeLadder()){
+							if(this.shouldTakeLadder()){
+								if(Math.random() < 0.75){
+									this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
+									this.onLadder = true;
+									this.isGrounded = false;
+								}
+							}
+							else if(Math.random() < 0.25){
 								this.x = ladder.x1 + (BEAMWIDTH - this.w) / 2;
 								this.onLadder = true;
 								this.isGrounded = false;
@@ -746,16 +832,31 @@ class Spark extends BasePhysicsActor{
 
 			let beam = level.beams[this.currentBeamIndex]
 			if(this.x < beam.x){
-				this.x = beam.x;
+				this.x = beam.x - (this.w / 2);
 				this.velX = MARIOSPEED;
 			}
 			else{
-				this.x = beam.x + beam.w;
+				this.x = beam.x + beam.w - (this.w / 2);
 				this.velX = -MARIOSPEED;
 			}
 		}
 	}
 
+	move(){
+		let rand = Math.random();
+		if(this.velX == 0){
+			this.velX = MARIOSPEED;
+			if(rand > 0.5){
+				this.velX = -MARIOSPEED;
+			}
+		}
+		else{
+			if(rand > 0.993){
+				this.velX = -this.velX;
+			}
+		}
+	}
+	
 	updatePosition(){
 		this.checkCollision();
 
@@ -780,20 +881,6 @@ class Spark extends BasePhysicsActor{
 		}
 	}
 
-	move(){
-		let rand = Math.random();
-		if(this.velX == 0){
-			this.velX = MARIOSPEED;
-			if(rand > 0.5){
-				this.velX = -MARIOSPEED;
-			}
-		}
-		else{
-			if(rand > 0.993){
-				this.velX = -this.velX;
-			}
-		}
-	}
 
 	draw(){
 		this.updatePosition();
@@ -831,7 +918,22 @@ class Hammer{
 		if(level.level == 1){
 			for(let [i, barrel] of level.barrels.entries()){
 				if(isThereCollision(this, barrel)){
-					level.barrels.splice(i, 1)
+					if(barrel.blue){
+						let rand = Math.random();
+						if(rand < 0.5){
+							score += 500;
+						}
+						else if(rand < 0.75){
+							score += 800;
+						}
+						else{
+							score += 300;
+						}
+					}
+					else{
+						score += 300;
+					}
+					level.barrels.splice(i, 1);
 					return;
 				}
 			}
@@ -839,7 +941,17 @@ class Hammer{
 
 		for(let [i, spark] of level.sparks.entries()){
 			if(isThereCollision(this, spark)){
-				level.sparks.splice(i, 1)
+				let rand = Math.random();
+				if(rand < 0.5){
+					score += 500;
+				}
+				else if(rand < 0.75){
+					score += 800;
+				}
+				else{
+					score += 300;
+				}
+				level.sparks.splice(i, 1);
 				return;
 			}
 		}
@@ -916,6 +1028,19 @@ class Ladder{
 	}
 }
 
+class Fire{
+	constructor(){
+		this.x = 51;
+		this.y = 648;
+		this.w = 48;
+		this.h = 48;
+	}
+
+	draw(){
+		image(fireImg, this.x, this.y);
+	}
+}
+
 
 
 /* Input functions */
@@ -931,13 +1056,15 @@ function keyPressed(){
 
 function preload(){
 	backgroundLevelOneImg = loadImage("assets/background.png");
-	sparkLeftImg = loadImage("assets/spark-beta-left.gif");
-	sparkRightImg = loadImage("assets/spark-beta-right.gif");
+	liveImg = loadImage("assets/live.png");
+	fireImg = loadImage("assets/fire.gif");
 	hammerImg = loadImage("assets/hammer.png");
-	barrelSideImg = loadImage("assets/barrel_side.gif")
-	barrelTopImg = loadImage("assets/barrel_top.gif")
-	chapulinImg = loadImage("assets/chapulin.png")
-	chapulinRightImg = loadImage("assets/chapulin-right.png")
+	sparkLeftImg = loadImage("assets/spark-left.gif");
+	sparkRightImg = loadImage("assets/spark-right.gif");
+	barrelSideImg = loadImage("assets/barrel_side.gif");
+	barrelTopImg = loadImage("assets/barrel_top.gif");
+	chapulinImg = loadImage("assets/chapulin.png");
+	chapulinRightImg = loadImage("assets/chapulin-right.png");
 }
 
 
@@ -951,6 +1078,7 @@ function setup() {
 	lives = 2;
 	startPause = false;
 	newStartTime = 0;
+	extraLifeAwarded = false;
 	
 	level = new LevelOne();
 }
@@ -1006,6 +1134,7 @@ function draw() {
 	else if(level.checkWin()){
 		noLoop();
 		bGameOver = true;
+		score += level.bonus;
 		stroke("yellow");
 		fill("white");
 		textSize(40);
@@ -1016,6 +1145,11 @@ function draw() {
 		fill("white");
 	}
 
+	if(score >=7000 && !extraLifeAwarded){
+		lives++;
+		extraLifeAwarded = true;
+	}
+
 	
 	// PRINT SCORE INFO
 	highScore = Math.max(highScore, score);
@@ -1024,7 +1158,9 @@ function draw() {
 	text('HIGH SCORE', WIDTH / 2, 5);
 	text(highScore.toString(), WIDTH / 2, 40);
 	text(score.toString(), 120, 5);
-	text(lives.toString(), 120, 40);
+	for(let i=0; i < lives; i++){
+		image(liveImg, 80 + i* 28, 40);
+	}
 	text('LEVEL ' + level.level.toString(), WIDTH - 120, 5);
 	text('BONUS:', WIDTH - 120, 40);
 	text(level.bonus.toString(), WIDTH - 120, 75);
