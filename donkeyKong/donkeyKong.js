@@ -22,7 +22,7 @@ highScore = 0;
 
 
 // TODO
-// - finish graphics: mario (chapulin), donkey kong (cuajinais), pauline (minina)
+// - finish graphics: mario (chapulin), donkey kong (cuajinais), heart
 // - ensure donkey kong kills mario
 // - add sound
 // - new levels??
@@ -139,6 +139,8 @@ class LevelOne extends Level{
 	draw(){
 		clear();
 		background(this.background);
+
+		image(mininaImg, 264, 102);
 
 		// If barrelsTThrown = 0: send first barrel down.
 		if(this.barrelsThrown == 0){
@@ -699,10 +701,20 @@ class Barrel extends BasePhysicsActor{
 		this.updatePosition();
 
 		if(this.onLadder){
-			image(barrelSideImg, this.x - 6, this.y)
+			if(this.blue){
+				image(barrelBlueSideImg, this.x - 6, this.y);
+			}
+			else{
+				image(barrelSideImg, this.x - 6, this.y);
+			}
 		}
 		else{
-			image(barrelTopImg, this.x, this.y)
+			if(this.blue){
+				image(barrelBlueTopImg, this.x, this.y);
+			}
+			else{
+				image(barrelTopImg, this.x, this.y);
+			}
 		}
 		// rect(this.x, this.y, this.w, this.h, 4);
 	}
@@ -727,10 +739,10 @@ class FirstBarrel extends Barrel{
 		this.updatePosition();
 
 		if(this.isGrounded){
-			image(barrelTopImg, this.x - 6, this.y)
+			image(barrelBlueTopImg, this.x - 6, this.y)
 		}
 		else{
-			image(barrelSideImg , this.x, this.y)
+			image(barrelBlueSideImg , this.x, this.y)
 		}
 	}
 }
@@ -1062,9 +1074,12 @@ function preload(){
 	sparkLeftImg = loadImage("assets/spark-left.gif");
 	sparkRightImg = loadImage("assets/spark-right.gif");
 	barrelSideImg = loadImage("assets/barrel_side.gif");
+	barrelBlueSideImg = loadImage("assets/barrel_side_blue.gif");
 	barrelTopImg = loadImage("assets/barrel_top.gif");
+	barrelBlueTopImg = loadImage("assets/barrel_top_blue.gif");
 	chapulinImg = loadImage("assets/chapulin.png");
 	chapulinRightImg = loadImage("assets/chapulin-right.png");
+	mininaImg = loadImage("assets/minina.png");
 }
 
 
