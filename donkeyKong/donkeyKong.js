@@ -22,7 +22,10 @@ highScore = 0;
 
 
 // TODO
-// - finish graphics: mario (chapulin), donkey kong (cuajinais), heart
+// - bug: first barrel disappears when game is restarted after losing all lives
+// - tweak hammer position to match mario's hands
+// - finish graphics: (cuajinais)
+// - include finished graphics (heart, cuajinais)
 // - ensure donkey kong kills mario
 // - add sound
 // - new levels??
@@ -58,6 +61,7 @@ function restartGame(){
 	newStartTime = 0;
 	score = 0;
 	extraLifeAwarded = false;
+	bonusTimer = 0;
 	
 	level = new LevelOne();
 
@@ -110,7 +114,7 @@ class LevelOne extends Level{
 
 		super(1, 168, mario, beams, ladders, 5000, backgroundLevelOneImg);
 
-		this.hammers = [new Hammer(504, 573), new Hammer(48, 285)];
+		this.hammers = [new Hammer(504, 573), new Hammer(48, 282)];
 		this.barrels = [];
 		this.sparks = [];
 		this.lastBarrelSpawn = millis();
@@ -276,6 +280,7 @@ class Mario extends BasePhysicsActor{
 		this.hammerHeld = null;
 		this.facingLeft = true;
 		this.jumpedOver = false;
+		this.dead = false;
 
 		//DEBUG
 		this.initY = y;
@@ -465,6 +470,7 @@ class Mario extends BasePhysicsActor{
 			// barrels
 			for(let barrel of level.barrels){
 				if(isThereCollision(this, barrel)){
+					this.dead = true;
 					lostLife();
 					return;
 				}
@@ -472,6 +478,7 @@ class Mario extends BasePhysicsActor{
 
 			if(level.fire){
 				if(isThereCollision(this, level.fire)){
+					this.dead = true;
 					lostLife();
 					return;
 				}
@@ -481,6 +488,7 @@ class Mario extends BasePhysicsActor{
 		//sparks
 		for(let spark of level.sparks){
 			if(isThereCollision(this, spark)){
+				this.dead = true;
 				lostLife();
 				return;
 			}
@@ -552,6 +560,44 @@ class Mario extends BasePhysicsActor{
 			this.x = WIDTH - this.w;
 		}
 	}
+
+	selectSprite(){
+		if(this.dead){
+			return chapulinDeadImg;
+		}
+		
+		if(this.isJumping){
+			return chapulinJumpingImg;
+		}
+		
+		if(this.onLadder){
+			return chapulinClimbingImg;
+		}
+		
+		if(this.hasHammer){
+			if(this.hammerHeld.isDown){
+				if(this.velX == 0){
+					return chapulinStandingHammerDownImg
+				}
+	
+				return chapulinRunningHammerDownImg;
+
+			}
+
+			if(this.velX == 0){
+				return chapulinStandingHammerUpImg
+			}
+
+			return chapulinRunningHammerUpImg;
+
+		}
+
+		if(this.velX == 0){
+			return chapulinStandingImg;
+		}
+
+		return chapulinRunningImg;
+	}
 	
 	draw(){
 		this.updatePosition();
@@ -563,11 +609,26 @@ class Mario extends BasePhysicsActor{
 		// console.log(this.initY - this.maxY);
 		// console.log(this.maxX);
 
-		if(this.facingLeft){
+		let chapulinImg = this.selectSprite();
+
+		if(this.facingLeft || this.dead){
 			image(chapulinImg, this.x, this.y);
 		}
+		else if(this.onLadder){
+			if(this.velY == 0){
+				image(chapulinImg, this.x, this.y);
+				chapulinImg.pause();
+			}
+			else{
+				image(chapulinImg, this.x, this.y);
+				chapulinImg.play();
+			}
+		}
 		else{
-			image(chapulinRightImg, this.x, this.y);
+			push();
+			scale(-1, 1);
+			image(chapulinImg, -this.x - this.h, this.y);
+			pop();
 		}
 		// push();
 		// // strokeWeight(3);
@@ -899,10 +960,13 @@ class Spark extends BasePhysicsActor{
 
 		// sparkImg.pause();
 		if(this.velX > 0){
-			image(sparkRightImg, this.x - 12, this.y - BEAMWIDTH);
+			push();
+			scale(-1, 1);
+			image(sparkImg, -this.x - 36, this.y - BEAMWIDTH);
+			pop();
 		}
 		else{
-			image(sparkLeftImg, this.x - 12, this.y - BEAMWIDTH);
+			image(sparkImg, this.x - 12, this.y - BEAMWIDTH);
 		}
 		// sparkImg.setFrame(0);
 
@@ -1071,15 +1135,22 @@ function preload(){
 	liveImg = loadImage("assets/live.png");
 	fireImg = loadImage("assets/fire.gif");
 	hammerImg = loadImage("assets/hammer.png");
-	sparkLeftImg = loadImage("assets/spark-left.gif");
-	sparkRightImg = loadImage("assets/spark-right.gif");
+	sparkImg = loadImage("assets/spark.gif");
 	barrelSideImg = loadImage("assets/barrel_side.gif");
 	barrelBlueSideImg = loadImage("assets/barrel_side_blue.gif");
 	barrelTopImg = loadImage("assets/barrel_top.gif");
 	barrelBlueTopImg = loadImage("assets/barrel_top_blue.gif");
-	chapulinImg = loadImage("assets/chapulin.png");
-	chapulinRightImg = loadImage("assets/chapulin-right.png");
+	chapulinClimbingImg = loadImage("assets/chapulin_climbing.gif");
+	chapulinDeadImg = loadImage("assets/chapulin_dead.png");
+	chapulinJumpingImg = loadImage("assets/chapulin_jumping.png");
+	chapulinRunningImg = loadImage("assets/chapulin_running.gif");
+	chapulinRunningHammerDownImg = loadImage("assets/chapulin_running_hammer_down.gif");
+	chapulinRunningHammerUpImg = loadImage("assets/chapulin_running_hammer_up.gif");
+	chapulinStandingImg = loadImage("assets/chapulin_standing.png");
+	chapulinStandingHammerDownImg = loadImage("assets/chapulin_standing_hammer_down.png");
+	chapulinStandingHammerUpImg = loadImage("assets/chapulin_standing_hammer_up.png");
 	mininaImg = loadImage("assets/minina.png");
+	heartImg = loadImage("assets/heart.gif");
 }
 
 
