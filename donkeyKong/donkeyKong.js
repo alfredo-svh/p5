@@ -22,11 +22,7 @@ highScore = 0;
 
 
 // TODO
-// - bug: first barrel disappears when game is restarted after losing all lives
-// - tweak hammer position to match mario's hands
 // - finish graphics: (cuajinais)
-// - include finished graphics (heart, cuajinais)
-// - ensure donkey kong kills mario
 // - add sound
 // - new levels??
 
@@ -56,12 +52,17 @@ function lostLife(){
 }
 
 function restartGame(){
+	bGameOver = false;
+	bLifeLost = false;
+
+	deltaTime = 0;
+	lastFrameTime = millis();
+
 	lives = 2;
 	startPause = false;
 	newStartTime = 0;
 	score = 0;
 	extraLifeAwarded = false;
-	bonusTimer = 0;
 	
 	level = new LevelOne();
 
@@ -73,6 +74,7 @@ function restartGame(){
 
 class Level{
 	constructor(level, goal, mario, beams, ladders, bonus, background){
+		bonusTimer = millis();
 		this.level = level;
 		this.goal = goal;
 		this.mario = mario;
@@ -87,6 +89,7 @@ class Level{
 	}
 
 	resetLevel(){
+		bonusTimer = millis();
 		this.bonus = this.initialBonus;
 	}
 
@@ -133,21 +136,20 @@ class LevelOne extends Level{
 		this.mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
 		this.sparks = [];
 		this.barrels = [];
-		this.hammers = [new Hammer(504, 573), new Hammer(48, 291)];;
+		this.hammers = [new Hammer(504, 573), new Hammer(48, 282)];;
 		this.bonus = this.initialBonus;
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
 		this.fire = null;
+		bonusTimer = millis();
 	}
 
 	draw(){
 		clear();
 		background(this.background);
 
-		image(mininaImg, 264, 102);
-
 		// If barrelsTThrown = 0: send first barrel down.
-		if(this.barrelsThrown == 0){
+		if(this.barrelsThrown == 0 && millis() - this.lastBarrelSpawn >= 45){
 			this.barrels.push(new FirstBarrel());
 			this.barrelsThrown++;
 		}
@@ -164,7 +166,6 @@ class LevelOne extends Level{
 			this.barrelsThrown++;
 		}
 
-	
 		for(let barrel of this.barrels){
 			barrel.draw();
 		}
@@ -201,6 +202,11 @@ class LevelOne extends Level{
 		}
 		if(this.fire){
 			this.fire.draw();
+		}
+
+		image(mininaImg, 264, 102);
+		if(this.checkWin()){
+			image(heartImg, 324, 81);
 		}
 	}
 }
@@ -434,6 +440,7 @@ class Mario extends BasePhysicsActor{
 					// } // DEBUG
 
 					if(!this.isJumping && !this.isGrounded){
+						this.dead = true;
 						lostLife();
 						return;
 					}
@@ -476,12 +483,19 @@ class Mario extends BasePhysicsActor{
 				}
 			}
 
+			// fire on oil drum
 			if(level.fire){
 				if(isThereCollision(this, level.fire)){
 					this.dead = true;
 					lostLife();
 					return;
 				}
+			}
+
+			// donkey kong
+			if(this.y <= 204 && this.x <= 192){
+				this.dead = true;
+				lostLife();
 			}
 		}
 
@@ -627,7 +641,7 @@ class Mario extends BasePhysicsActor{
 		else{
 			push();
 			scale(-1, 1);
-			image(chapulinImg, -this.x - this.h, this.y);
+			image(chapulinImg, -this.x - this.w, this.y);
 			pop();
 		}
 		// push();
@@ -786,6 +800,7 @@ class FirstBarrel extends Barrel{
 		super(false, true, 120, 222);
 		this.isFalling = true;
 		this.direction = 0;
+		this.isGrounded = false;
 	}
 
 	checkCollision(){
@@ -1036,15 +1051,14 @@ class Hammer{
 	updatePosition(){
 
 		//hammer up
-		if((millis() % 500) > 250){
+		if((millis() % 500) > 250 || level.mario.isJumping){
 			this.isDown = false;
-			this.x = level.mario.x + 12;
+			this.x = level.mario.x + 10;
 			this.y = level.mario.y - this.h;
 		}
 		// hammer down
 		else{
 			this.isDown = true;
-			this.y = level.mario.y;
 
 			this.x = level.mario.x;
 			if(level.mario.facingLeft){
@@ -1053,6 +1067,8 @@ class Hammer{
 			else{
 				this.x += level.mario.w;
 			}
+
+			this.y = level.mario.y + 13;
 		}
 	}
 
@@ -1061,16 +1077,15 @@ class Hammer{
 			this.updatePosition();
 			this.checkCollision();
 		}
-		//TODO make mario hold it lower?
 		if(this.isDown){
 			push();
+			imageMode(CENTER);
+			translate(this.x + (this.w / 2), this.y + (this.h / 2));
 			if(level.mario.facingLeft){
-				translate(this.x, this.y + this.h);
-				rotate(PI / 2 * 135);
+				rotate(-PI / 2);
 			}
 			else{
-				translate(this.x + this.w, this.y);
-				rotate(PI / 2 * 45);
+				rotate(PI / 2);
 			}
 			image(hammerImg, 0, 0);
 			pop();
