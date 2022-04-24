@@ -23,7 +23,6 @@ highScore = 0;
 
 // TODO
 // - finish graphics: (cuajinais)
-// - add sound
 // - new levels??
 
 
@@ -49,6 +48,9 @@ function lostLife(){
 	}
 	lives--;
 	bLifeLost = true;
+	level.music.stop();
+	hammerMusic.stop();
+	deathSound.play();
 }
 
 function restartGame(){
@@ -123,6 +125,8 @@ class LevelOne extends Level{
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
 		this.fire = null;
+		this.music = stage1Music;
+		this.music.loop();
 	}
 
 	checkWin(){
@@ -142,6 +146,7 @@ class LevelOne extends Level{
 		this.barrelsThrown = 0;
 		this.fire = null;
 		bonusTimer = millis();
+		this.music.loop();
 	}
 
 	draw(){
@@ -287,6 +292,7 @@ class Mario extends BasePhysicsActor{
 		this.facingLeft = true;
 		this.jumpedOver = false;
 		this.dead = false;
+		this.lastY = y;
 
 		//DEBUG
 		this.initY = y;
@@ -418,7 +424,10 @@ class Mario extends BasePhysicsActor{
 		if(keyIsDown(32) && !this.isJumping && !this.onLadder  && !this.hasHammer){
 			//DEBUG 
 			this.lastX = this.x;
-
+			
+			jumpSound.play();
+			
+			this.lastY = this.y;
 			this.isJumping = true;
 			this.isGrounded = false;
 			this.velY = -JUMPSTRENGTH;
@@ -438,6 +447,15 @@ class Mario extends BasePhysicsActor{
 					// 		this.maxX = dX;
 					// 	}
 					// } // DEBUG
+					
+					if(this.isJumping){
+						var dY = this.y - this.lastY;
+						if(dY > 48){
+							this.dead = true;
+							lostLife();
+							return;
+						}
+					}
 
 					if(!this.isJumping && !this.isGrounded){
 						this.dead = true;
@@ -463,6 +481,9 @@ class Mario extends BasePhysicsActor{
 						this.hammerHeld = hammer;
 						hammer.isHeld = true;
 						hammer.timeout = millis() + 10000;
+
+						level.music.pause();
+						hammerMusic.loop();
 					}
 	
 				}
@@ -470,7 +491,9 @@ class Mario extends BasePhysicsActor{
 		}
 
 		if(this.isJumping && this.velY >= 0){
-			this.didJumpOver();
+			if(this.didJumpOver()){
+				bonusSound.play();
+			}
 		}
 
 		if(level.level == 1){
@@ -520,6 +543,8 @@ class Mario extends BasePhysicsActor{
 			}
 			this.hasHammer = false;
 			this.hammerHeld = null;
+			hammerMusic.stop();
+			level.music.loop();
 		}
 
 		if(!this.isJumping){
@@ -576,16 +601,17 @@ class Mario extends BasePhysicsActor{
 	}
 
 	selectSprite(){
+
+		if(this.onLadder){
+			return chapulinClimbingImg;
+		}
+
 		if(this.dead){
 			return chapulinDeadImg;
 		}
 		
 		if(this.isJumping){
 			return chapulinJumpingImg;
-		}
-		
-		if(this.onLadder){
-			return chapulinClimbingImg;
 		}
 		
 		if(this.hasHammer){
@@ -624,19 +650,18 @@ class Mario extends BasePhysicsActor{
 		// console.log(this.maxX);
 
 		let chapulinImg = this.selectSprite();
-
-		if(this.facingLeft || this.dead){
+		
+		if(this.onLadder){
 			image(chapulinImg, this.x, this.y);
-		}
-		else if(this.onLadder){
 			if(this.velY == 0){
-				image(chapulinImg, this.x, this.y);
 				chapulinImg.pause();
 			}
 			else{
-				image(chapulinImg, this.x, this.y);
 				chapulinImg.play();
 			}
+		}
+		else if(this.facingLeft || this.dead){
+			image(chapulinImg, this.x, this.y);
 		}
 		else{
 			push();
@@ -644,6 +669,16 @@ class Mario extends BasePhysicsActor{
 			image(chapulinImg, -this.x - this.w, this.y);
 			pop();
 		}
+
+		if(!this.dead && !this.isJumping && (this.velX !=0 || this.velY != 0)){
+			if(!walkingSound.isPlaying()){
+				walkingSound.play();
+			}
+		}
+		else{
+			walkingSound.stop();
+		}
+
 		// push();
 		// // strokeWeight(3);
 		// stroke("blue");
@@ -1025,6 +1060,7 @@ class Hammer{
 						score += 300;
 					}
 					level.barrels.splice(i, 1);
+					destroySound.play();
 					return;
 				}
 			}
@@ -1043,6 +1079,7 @@ class Hammer{
 					score += 300;
 				}
 				level.sparks.splice(i, 1);
+				destroySound.play();
 				return;
 			}
 		}
@@ -1166,6 +1203,15 @@ function preload(){
 	chapulinStandingHammerUpImg = loadImage("assets/chapulin_standing_hammer_up.png");
 	mininaImg = loadImage("assets/minina.png");
 	heartImg = loadImage("assets/heart.gif");
+
+	stage1Music = loadSound("sound/stage1bgm.wav");
+	hammerMusic = loadSound("sound/hammer.mp3");
+	walkingSound = loadSound("sound/walking.wav");
+	jumpSound = loadSound("sound/jump.wav");
+	deathSound = loadSound("sound/death.mp3");
+	destroySound = loadSound("sound/destroyWithHammer.wav");
+	bonusSound = loadSound("sound/bonus.wav");
+	endingSound = loadSound("sound/ending.mp3");
 }
 
 
@@ -1233,6 +1279,8 @@ function draw() {
 		}
 	}
 	else if(level.checkWin()){
+		level.music.stop();
+		endingSound.play();
 		noLoop();
 		bGameOver = true;
 		score += level.bonus;
