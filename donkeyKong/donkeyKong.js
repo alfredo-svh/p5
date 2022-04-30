@@ -22,8 +22,10 @@ highScore = 0;
 
 
 // TODO
-// - finish graphics: (cuajinais)
-// - new levels??
+// - finish graphics: (cuajinais) + add collision / death
+// - tweak ending of both stages
+// - get extra sounds? ex: hurry up
+// - print points received?
 
 
 /* Helper functions */
@@ -75,16 +77,21 @@ function restartGame(){
 /* Classes */
 
 class Level{
-	constructor(level, goal, mario, beams, ladders, bonus, background){
+	constructor(level, goal, mario, beams, ladders, hammers, bonus, background, music){
 		bonusTimer = millis();
 		this.level = level;
 		this.goal = goal;
 		this.mario = mario;
 		this.beams = beams;
 		this.ladders = ladders;
+		this.hammers = hammers;
 		this.initialBonus = bonus;
 		this.bonus = bonus;
 		this.background = background;
+		this.music = music;
+		this.sparks = [];
+
+		this.music.loop();
 	}
 
 	checkWin(){
@@ -93,6 +100,8 @@ class Level{
 	resetLevel(){
 		bonusTimer = millis();
 		this.bonus = this.initialBonus;
+		this.sparks = [];
+		this.music.loop();
 	}
 
 	draw(){
@@ -117,16 +126,13 @@ class LevelOne extends Level{
 					   new Ladder(336, 447, 543), new Ladder(552, 459, 531), new Ladder(96, 360, 432), new Ladder(216, 354, 438), new Ladder(504, 336, 456, true),
 					   new Ladder(264, 252, 351, true), new Ladder(552, 261, 333), new Ladder(384, 168, 252)];
 
-		super(1, 168, mario, beams, ladders, 5000, backgroundLevelOneImg);
+		let hammers = [new Hammer(504, 573), new Hammer(48, 282)];
 
-		this.hammers = [new Hammer(504, 573), new Hammer(48, 282)];
+		super(1, 168, mario, beams, ladders, hammers, 5000, backgroundLevelOneImg, stage1Music);
 		this.barrels = [];
-		this.sparks = [];
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
 		this.fire = null;
-		this.music = stage1Music;
-		this.music.loop();
 	}
 
 	checkWin(){
@@ -137,16 +143,13 @@ class LevelOne extends Level{
 		return false;
 	}
 	resetLevel(){
+		super.resetLevel();
 		this.mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
-		this.sparks = [];
 		this.barrels = [];
-		this.hammers = [new Hammer(504, 573), new Hammer(48, 282)];;
-		this.bonus = this.initialBonus;
+		this.hammers = [new Hammer(504, 573), new Hammer(48, 282)];
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
 		this.fire = null;
-		bonusTimer = millis();
-		this.music.loop();
 	}
 
 	draw(){
@@ -212,8 +215,147 @@ class LevelOne extends Level{
 		image(mininaImg, 264, 102);
 		if(this.checkWin()){
 			image(heartImg, 324, 81);
+			//TODO
+			heartImg.pause();
 		}
 	}
+}
+
+class LevelFour extends Level{
+	constructor(){
+		let mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
+		let beams = [new Beam(0, 744, WIDTH),
+			new Beam(24, 624, 144), new Beam(192, 624, 288), new Beam(504, 624, 144),
+			new Beam(48, 504, 120), new Beam(192, 504, 288), new Beam(504, 504, 120),
+			new Beam(72, 384, 96), new Beam(192, 384, 288), new Beam(504, 384, 96),
+			new Beam(96, 264, 72), new Beam(192, 264, 288), new Beam(504, 264, 72)
+		];
+		let ladders = [new Ladder(24, 624, 744), new Ladder(312, 624, 744), new Ladder(624, 624, 744),
+			new Ladder(48, 504, 624), new Ladder(216, 504, 624), new Ladder(432, 504, 624), new Ladder(600, 504, 624),
+			new Ladder(72, 384, 504), new Ladder(312, 384, 504), new Ladder(576, 384, 504),
+			new Ladder(96, 264, 384), new Ladder(192, 264, 384), new Ladder(456, 264, 384), new Ladder(552, 264, 384)
+		];
+		let hammers = [new Hammer(312, 288), new Hammer(24, 408)];
+		
+		super(4, 0, mario, beams, ladders, hammers, 5000, backgroundLevelFourImg, stage4Music);
+
+		this.rivets = [new Rivet(168, 624), new Rivet(168, 504), new Rivet(168, 384), new Rivet(168, 264),
+			new Rivet(480, 624), new Rivet(480, 504), new Rivet(480, 384), new Rivet(480, 264)
+		];
+		this.items = [new PaulinesItem(591, 597, 45, 21, mininasHatImg), new PaulinesItem(84, 216, 48, 45, mininasParasolImg), new PaulinesItem(381, 714, 27, 27, mininasPurseImg)];
+		this.lastSparkSpawn = millis();
+	}
+
+	checkWin(){
+		if(this.rivets.length == this.goal){
+			return true;
+		}
+		return false;
+	}
+
+	resetLevel(){
+		super.resetLevel();
+		this.mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
+		this.hammers = [new Hammer(312, 288), new Hammer(24, 408)];
+		this.rivets = [new Rivet(168, 624), new Rivet(168, 504), new Rivet(168, 384), new Rivet(168, 264),
+			new Rivet(480, 624), new Rivet(480, 504), new Rivet(480, 384), new Rivet(480, 264)
+		];
+		this.items = [new PaulinesItem(591, 597, 45, 21, mininasHatImg), new PaulinesItem(84, 216, 48, 45, mininasParasolImg), new PaulinesItem(381, 714, 27, 27, mininasPurseImg)];
+		this.lastSparkSpawn = millis();
+	}
+
+	draw(){
+		clear();
+
+		//TODO
+		if(this.checkWin()){
+			image(heartImg, 324, 81);
+			heartImg.pause();
+		}
+
+		background(this.background);
+
+		// spawn sparks
+		if(this.sparks.length < 5 && millis() - this.lastSparkSpawn > 4200){
+			this.lastSparkSpawn = millis();
+			
+			let x = 0;
+			let y = random([720, 600, 480, 360]);
+			
+			if(this.mario.x + this.mario.w / 2 > WIDTH / 2){
+				switch(y){
+					case 360:
+						x += 24;
+					case 480:
+						x += 24;
+					case 600:
+						x += 24;
+				};
+			}
+			else{
+				x = WIDTH - BEAMWIDTH;
+				switch(y){
+					case 360:
+						x -= 24;
+					case 480:
+						x -= 24;
+					case 600:
+						x -= 24;
+				};
+			}
+
+			this.sparks.push(new Spark(x, y));
+
+		}
+		
+		// draw sparks
+		for(let spark of this.sparks){
+			spark.draw();
+		}
+		
+		// draw hammers
+		for(let hammer of this.hammers){
+			hammer.draw();
+		}
+		
+		// draw mario
+		this.mario.draw();
+
+		//remove rivets
+		if(!this.mario.onRivet){
+			for(let [i, rivet] of this.rivets.entries()){
+				if(rivet.steppedOn){
+					score += 100;
+					bonusSound.play();
+					this.rivets.splice(i, 1);
+				}
+			}
+		}
+
+		//draw rivets
+		for(let rivet of this.rivets){
+			rivet.draw();
+		}
+
+		//draw items
+		for(let item of this.items){
+			item.draw();
+		}
+		
+
+		// pauline sprite
+		if(this.mario.x < 312){
+			push();
+			scale(-1, 1);
+			image(mininaImg, -360, 78);
+			pop();
+		}
+		else{
+			image(mininaImg, 312, 78);
+		}
+
+	}
+
 }
 
 class BasePhysicsActor{
@@ -228,8 +370,8 @@ class BasePhysicsActor{
 	}
 
 	isOnTop(obj){
-		if(obj instanceof Beam){
-			let x = this.x + this.w / 2
+		if(obj instanceof Beam || obj instanceof Rivet){
+			let x = this.x + this.w / 2;
 			var isBetweenX = x >= obj.x && x <= obj.x + obj.w;
 			var isBetweenY = this.y + this.h >= obj.y - 3 && this.y + this.h < obj.y + BEAMWIDTH;
 
@@ -293,6 +435,7 @@ class Mario extends BasePhysicsActor{
 		this.jumpedOver = false;
 		this.dead = false;
 		this.lastY = y;
+		this.onRivet = false;
 
 		//DEBUG
 		this.initY = y;
@@ -311,27 +454,41 @@ class Mario extends BasePhysicsActor{
 		// 	scanArea = {x: this.x-26, y: this.y + this.h, w: 100, h: 36}
 		// }
 
-		let numberOfBarrelsJumped = 0;
-	
-		for(let barrel of level.barrels){
-			if(this.x + this.w > barrel.x && this.x < barrel.x + barrel.w && this.y + 2 * this.h > barrel.y && this.y < barrel.y + barrel.h){
-				numberOfBarrelsJumped++;
+		if(level.level == 1){
+
+			let numberOfBarrelsJumped = 0;
+		
+			for(let barrel of level.barrels){
+				if(this.x + this.w > barrel.x && this.x < barrel.x + barrel.w && this.y + 2 * this.h > barrel.y && this.y < barrel.y + barrel.h){
+					numberOfBarrelsJumped++;
+				}
+			}
+			
+			if(numberOfBarrelsJumped > 0){
+				switch(numberOfBarrelsJumped){
+					case 1:
+						score += 100;
+						break;
+					case 2:
+						score += 300;
+						break;
+					default:
+						score += 500;
+				}
+				this.jumpedOver = true;
+				return true;
 			}
 		}
-		
-		if(numberOfBarrelsJumped > 0){
-			switch(numberOfBarrelsJumped){
-				case 1:
+		else if(level.level == 4){
+			for(let [i, rivet] of level.rivets.entries()){
+				if(this.x + this.w > rivet.x && this.x < rivet.x + rivet.w && this.y + 2 * this.h > rivet.y && this.y < rivet.y + rivet.h){
 					score += 100;
-					break;
-				case 2:
-					score += 300;
-					break;
-				default:
-					score += 500;
+
+					level.rivets.splice(i, 1);
+
+					return true;
+				}
 			}
-			this.jumpedOver = true;
-			return true;
 		}
 		
 		for(let spark of level.sparks){
@@ -471,6 +628,21 @@ class Mario extends BasePhysicsActor{
 				}
 			}
 
+			if(level.level == 4){
+				for(let rivet of level.rivets){
+					if(this.isOnTop(rivet)){
+						rivet.steppedOn = true;
+
+						grounded = true;
+						this.isJumping = false;
+						this.jumpedOver = false;
+						this.onRivet = true;
+
+						break;
+					}
+				}
+			}
+
 			this.isGrounded = grounded;
 
 			//hammer
@@ -486,6 +658,18 @@ class Mario extends BasePhysicsActor{
 						hammerMusic.loop();
 					}
 	
+				}
+			}
+
+			//items
+			if(level.level == 4){
+				for(let [i, item] of level.items.entries()){
+					if(isThereCollision(this, item)){
+						bonusSound.play();
+						score += 300;
+
+						level.items.splice(i, 1);
+					}
 				}
 			}
 		}
@@ -558,6 +742,8 @@ class Mario extends BasePhysicsActor{
 			this.velY = 0;
 		}
 		// this.isGrounded = false;
+
+		this.onRivet = false;
 		
 		this.checkCollision();
 		this.handleInput();
@@ -859,8 +1045,8 @@ class FirstBarrel extends Barrel{
 }
 
 class Spark extends BasePhysicsActor{
-	constructor(){
-		super(100, HEIGHT - BEAMWIDTH * 2, BEAMWIDTH, BEAMWIDTH);
+	constructor(x=100, y=HEIGHT - BEAMWIDTH * 2){
+		super(x, y, BEAMWIDTH, BEAMWIDTH);
 		this.onLadder = false;
 		this.ladderClimbing = null;
 		this.currentBeamIndex = 0;
@@ -948,6 +1134,15 @@ class Spark extends BasePhysicsActor{
 			}
 		}
 
+		// check if on top of rivet
+		if(level.level == 4){
+			for(let rivet of level.rivets){
+				if(this.isOnTop(rivet)){
+					return;
+				}
+			}
+		}
+
 		// if we are not on a beam, we fell. We have to go back to the previous one
 		if(!(this.isOnBeam(this.currentBeamIndex) ||
 			 this.isOnBeam(this.currentBeamIndex+1) ||
@@ -1007,18 +1202,20 @@ class Spark extends BasePhysicsActor{
 
 	draw(){
 		this.updatePosition();
+		let img = sparkImg;
+		if(level.level == 4){
+			img = firefoxImg;
+		}
 
-		// sparkImg.pause();
 		if(this.velX > 0){
 			push();
 			scale(-1, 1);
-			image(sparkImg, -this.x - 36, this.y - BEAMWIDTH);
+			image(img, -this.x - 36, this.y - BEAMWIDTH);
 			pop();
 		}
 		else{
-			image(sparkImg, this.x - 12, this.y - BEAMWIDTH);
+			image(img, this.x - 12, this.y - BEAMWIDTH);
 		}
-		// sparkImg.setFrame(0);
 
 		// push();
 		// // strokeWeight(3);
@@ -1080,6 +1277,11 @@ class Hammer{
 				}
 				level.sparks.splice(i, 1);
 				destroySound.play();
+
+				if(level.level == 4){
+					level.lastSparkSpawn = millis();
+				}
+
 				return;
 			}
 		}
@@ -1146,6 +1348,34 @@ class Beam{
 	}
 }
 
+class Rivet{
+	constructor(x, y){
+		this.x = x;
+		this.y = y;
+		this.w = BEAMWIDTH;
+		this.h = BEAMWIDTH;
+		this.steppedOn = false;
+	}
+
+	draw(){
+		image(rivetImg, this.x, this.y-3);
+	}
+}
+
+class PaulinesItem{
+	constructor(x, y, w, h, img){
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+		this.img = img;
+	}
+
+	draw(){
+		image(this.img, this.x, this.y);
+	}
+}
+
 class Ladder{
 	constructor(x1, y1, y2, isHalf=false){
 		this.x1 = x1;
@@ -1184,10 +1414,12 @@ function keyPressed(){
 
 function preload(){
 	backgroundLevelOneImg = loadImage("assets/background.png");
+	backgroundLevelFourImg = loadImage("assets/background_stage4.png");
 	liveImg = loadImage("assets/live.png");
 	fireImg = loadImage("assets/fire.gif");
 	hammerImg = loadImage("assets/hammer.png");
 	sparkImg = loadImage("assets/spark.gif");
+	firefoxImg = loadImage("assets/firefox.gif");
 	barrelSideImg = loadImage("assets/barrel_side.gif");
 	barrelBlueSideImg = loadImage("assets/barrel_side_blue.gif");
 	barrelTopImg = loadImage("assets/barrel_top.gif");
@@ -1202,9 +1434,14 @@ function preload(){
 	chapulinStandingHammerDownImg = loadImage("assets/chapulin_standing_hammer_down.png");
 	chapulinStandingHammerUpImg = loadImage("assets/chapulin_standing_hammer_up.png");
 	mininaImg = loadImage("assets/minina.png");
+	mininasHatImg = loadImage("assets/mininas_hat.png");
+	mininasParasolImg = loadImage("assets/mininas_parasol.png");
+	mininasPurseImg = loadImage("assets/mininas_purse.png");
 	heartImg = loadImage("assets/heart.gif");
+	rivetImg = loadImage("assets/rivet.png");
 
 	stage1Music = loadSound("sound/stage1bgm.wav");
+	stage4Music = loadSound("sound/stage4bgm.mp3");
 	hammerMusic = loadSound("sound/hammer.mp3");
 	walkingSound = loadSound("sound/walking.wav");
 	jumpSound = loadSound("sound/jump.wav");
@@ -1228,6 +1465,9 @@ function setup() {
 	extraLifeAwarded = false;
 	
 	level = new LevelOne();
+
+	//DEBUG
+	// level = new LevelFour();
 }
 
 
@@ -1280,18 +1520,25 @@ function draw() {
 	}
 	else if(level.checkWin()){
 		level.music.stop();
-		endingSound.play();
-		noLoop();
-		bGameOver = true;
 		score += level.bonus;
-		stroke("yellow");
-		fill("white");
-		textSize(40);
-		text("YOU WON!", WIDTH / 2, HEIGHT / 2 - 40);
-		textSize(30);
-		text("Press Enter key to play again", WIDTH / 2, HEIGHT / 2 + 50);
-		stroke("white");
-		fill("white");
+
+		if(level.level == 1){
+			level = new LevelFour();
+		}
+
+		else if(level.level == 4){
+			endingSound.play();
+			bGameOver = true;
+			stroke("yellow");
+			fill("white");
+			textSize(40);
+			text("YOU WON!", WIDTH / 2, HEIGHT / 2 - 40);
+			textSize(30);
+			text("Press Enter key to play again", WIDTH / 2, HEIGHT / 2 + 50);
+			stroke("white");
+			fill("white");
+			noLoop();
+		}
 	}
 
 	if(score >=7000 && !extraLifeAwarded){
@@ -1310,7 +1557,7 @@ function draw() {
 	for(let i=0; i < lives; i++){
 		image(liveImg, 80 + i* 28, 40);
 	}
-	text('LEVEL ' + level.level.toString(), WIDTH - 120, 5);
+	// text('LEVEL ' + level.level.toString(), WIDTH - 120, 5);
 	text('BONUS:', WIDTH - 120, 40);
 	text(level.bonus.toString(), WIDTH - 120, 75);
 }
