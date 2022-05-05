@@ -22,9 +22,7 @@ highScore = 0;
 
 
 // TODO
-// - finish graphics: (cuajinais) + add collision / death
-// - tweak ending of both stages
-// - get extra sounds? ex: hurry up
+// - finish graphics: (cuajinais)
 // - print points received?
 
 
@@ -52,6 +50,7 @@ function lostLife(){
 	bLifeLost = true;
 	level.music.stop();
 	hammerMusic.stop();
+	hurryUpMusic.stop();
 	deathSound.play();
 }
 
@@ -73,15 +72,31 @@ function restartGame(){
 	loop();
 }
 
+function printScore(){
+	highScore = Math.max(highScore, score);
+	textSize(35);
+	textAlign(CENTER, TOP);
+	text('HIGH SCORE', WIDTH / 2, 5);
+	text(highScore.toString(), WIDTH / 2, 40);
+	text(score.toString(), 120, 5);
+	for(let i=0; i < lives; i++){
+		image(liveImg, 80 + i* 28, 40);
+	}
+	// text('LEVEL ' + level.level.toString(), WIDTH - 120, 5);
+	text('BONUS:', WIDTH - 120, 40);
+	text(level.bonus.toString(), WIDTH - 120, 75);
+}
+
 
 /* Classes */
 
 class Level{
-	constructor(level, goal, mario, beams, ladders, hammers, bonus, background, music){
+	constructor(level, goal, mario, donkeyKong, beams, ladders, hammers, bonus, background, music, clearSound){
 		bonusTimer = millis();
 		this.level = level;
 		this.goal = goal;
 		this.mario = mario;
+		this.donkeyKong = donkeyKong;
 		this.beams = beams;
 		this.ladders = ladders;
 		this.hammers = hammers;
@@ -90,6 +105,7 @@ class Level{
 		this.background = background;
 		this.music = music;
 		this.sparks = [];
+		this.clearSound = clearSound;
 
 		this.music.loop();
 	}
@@ -115,6 +131,7 @@ class Level{
 class LevelOne extends Level{
 	constructor(){
 		let mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
+		let donkeyKong = new DonkeyKong(60, 156);
 		let beams = [new Beam(0, 744, 336), new Beam(336, 741), new Beam(384, 738), new Beam(432, 735), new Beam(480, 732), new Beam(528, 729), new Beam(576, 726), new Beam(624, 723),
 					 new Beam(0, 624), new Beam(48, 627), new Beam(96, 630), new Beam(144, 633), new Beam(192, 636), new Beam(240, 639), new Beam(288, 642), new Beam(336, 645), new Beam(384, 648), new Beam(432, 651), new Beam(480, 654), new Beam(528, 657), new Beam(576, 660),
 					 new Beam(48, 561), new Beam(96, 558), new Beam(144, 555), new Beam(192, 552), new Beam(240, 549), new Beam(288, 546), new Beam(336, 543), new Beam(384, 540), new Beam(432, 537), new Beam(480, 534), new Beam(528, 531), new Beam(576, 528), new Beam(624, 525),
@@ -128,7 +145,7 @@ class LevelOne extends Level{
 
 		let hammers = [new Hammer(504, 573), new Hammer(48, 282)];
 
-		super(1, 168, mario, beams, ladders, hammers, 5000, backgroundLevelOneImg, stage1Music);
+		super(1, 168, mario, donkeyKong, beams, ladders, hammers, 5000, backgroundLevelOneImg, stage1Music, stage1ClearSound);
 		this.barrels = [];
 		this.lastBarrelSpawn = millis();
 		this.barrelsThrown = 0;
@@ -156,10 +173,25 @@ class LevelOne extends Level{
 		clear();
 		background(this.background);
 
+		// level clear "cutscene"
+		if(this.checkWin()){
+			image(chapulinStandingImg, this.mario.x, this.mario.y);
+			image(heartImg, 324, 81);
+			if(heartImg.getCurrentFrame() == 0){
+				image(mininaImg, 264, 102);
+				donkeyKongImg.setFrame(0);
+				donkeyKongImg.pause();
+				this.donkeyKong.draw();
+			}
+			return;
+		}
+
 		// If barrelsTThrown = 0: send first barrel down.
 		if(this.barrelsThrown == 0 && millis() - this.lastBarrelSpawn >= 45){
 			this.barrels.push(new FirstBarrel());
 			this.barrelsThrown++;
+
+			donkeyKongImg.setFrame(0);
 		}
 
 		//spawn barrel
@@ -172,6 +204,7 @@ class LevelOne extends Level{
 			}
 			this.lastBarrelSpawn = millis();
 			this.barrelsThrown++;
+			donkeyKongImg.setFrame(3);
 		}
 
 		for(let barrel of this.barrels){
@@ -213,10 +246,20 @@ class LevelOne extends Level{
 		}
 
 		image(mininaImg, 264, 102);
+
+		this.donkeyKong.draw();
+
+		if(this.bonus <= 900 && !hurryUpMusic.isPlaying() && this.music.isPlaying()){
+			this.music.stop();
+			hurryUpMusic.loop();
+		}
+
 		if(this.checkWin()){
+			heartImg.setFrame(0);
 			image(heartImg, 324, 81);
-			//TODO
-			heartImg.pause();
+			this.music.stop();
+			hurryUpMusic.stop();
+			this.clearSound.play();
 		}
 	}
 }
@@ -224,6 +267,7 @@ class LevelOne extends Level{
 class LevelFour extends Level{
 	constructor(){
 		let mario = new Mario(200, HEIGHT - 3 * BEAMWIDTH);
+		let donkeyKong = new DonkeyKong(264, 168);
 		let beams = [new Beam(0, 744, WIDTH),
 			new Beam(24, 624, 144), new Beam(192, 624, 288), new Beam(504, 624, 144),
 			new Beam(48, 504, 120), new Beam(192, 504, 288), new Beam(504, 504, 120),
@@ -237,7 +281,7 @@ class LevelFour extends Level{
 		];
 		let hammers = [new Hammer(312, 288), new Hammer(24, 408)];
 		
-		super(4, 0, mario, beams, ladders, hammers, 5000, backgroundLevelFourImg, stage4Music);
+		super(4, 0, mario, donkeyKong, beams, ladders, hammers, 5000, backgroundLevelFourImg, stage4Music, stage4ClearSound);
 
 		this.rivets = [new Rivet(168, 624), new Rivet(168, 504), new Rivet(168, 384), new Rivet(168, 264),
 			new Rivet(480, 624), new Rivet(480, 504), new Rivet(480, 384), new Rivet(480, 264)
@@ -265,14 +309,55 @@ class LevelFour extends Level{
 	}
 
 	draw(){
-		clear();
-
-		//TODO
 		if(this.checkWin()){
-			image(heartImg, 324, 81);
-			heartImg.pause();
+			clear();
+			
+			if(this.donkeyKong.y > 552){
+				background(backgroundLevelFourEnd2Img);
+				heartImg.setFrame(0);
+				heartImg.pause();
+				
+
+				if(this.mario.x < 312){
+					push();
+					scale(-1, 1);
+					image(mininaImg, -360, 198);
+					image(chapulinStandingImg, -216 - this.mario.w, 216);
+					pop();
+					image(heartImg, 264, 177);
+				}
+				else{
+					image(mininaImg, 312, 198);
+					image(chapulinStandingImg, 408, 216);
+					image(heartImg, 360, 177);
+				}
+			}
+			else{
+				background(backgroundLevelFourEnd1Img);
+
+				// donkey kong
+				this.donkeyKong.y += 1.4;
+				this.donkeyKong.draw();
+
+				
+				// pauline and mario
+				if(this.mario.x < 312){
+					push();
+					scale(-1, 1);
+					image(mininaImg, -360, 78);
+					image(chapulinStandingImg, -this.mario.x - this.mario.w, this.mario.y);
+					pop();
+				}
+				else{
+					image(mininaImg, 312, 78);
+					image(chapulinStandingImg, this.mario.x, this.mario.y);
+				}
+			}
+
+			return;
 		}
 
+		clear();
 		background(this.background);
 
 		// spawn sparks
@@ -352,6 +437,25 @@ class LevelFour extends Level{
 		}
 		else{
 			image(mininaImg, 312, 78);
+		}
+
+		// donkey kong
+		donkeyKongImg.setFrame(0);
+		donkeyKongImg.pause();
+		this.donkeyKong.draw();
+
+		if(this.bonus <= 900 && !hurryUpMusic.isPlaying() && this.music.isPlaying()){
+			this.music.stop();
+			hurryUpMusic.loop();
+		}
+
+		if(this.checkWin()){
+			this.music.stop();
+			hurryUpMusic.stop();
+			hammerMusic.stop();
+			walkingSound.stop();
+			bonusSound.stop();
+			this.clearSound.play();
 		}
 
 	}
@@ -603,7 +707,7 @@ class Mario extends BasePhysicsActor{
 					// 	if(dX > this.maxX){
 					// 		this.maxX = dX;
 					// 	}
-					// } // DEBUG
+					// }
 					
 					if(this.isJumping){
 						var dY = this.y - this.lastY;
@@ -698,12 +802,13 @@ class Mario extends BasePhysicsActor{
 					return;
 				}
 			}
+		}
 
-			// donkey kong
-			if(this.y <= 204 && this.x <= 192){
-				this.dead = true;
-				lostLife();
-			}
+		// donkey kong
+		if(isThereCollision(this, level.donkeyKong)){
+			this.dead = true;
+			lostLife();
+			return;
 		}
 
 		//sparks
@@ -875,7 +980,7 @@ class Mario extends BasePhysicsActor{
 }
 
 class Barrel extends BasePhysicsActor{
-	constructor(crazy=false, blue=false, x = 200, y = 222){
+	constructor(crazy=false, blue=false, x = 180, y = 222){
 		super(x, y, 36, 30);
 		this.crazy = crazy;
 		this.blue = blue;
@@ -1226,6 +1331,22 @@ class Spark extends BasePhysicsActor{
 	}
 }
 
+class DonkeyKong{
+	constructor(x, y){
+		this.x = x;
+		this.y = y;
+		this.w = 144;
+		this.h = 96;
+
+		donkeyKongImg.setFrame(0);
+		donkeyKongImg.play();
+	}
+
+	draw(){
+		image(donkeyKongImg, this.x, this.y);
+	}
+}
+
 class Hammer{
 	constructor(x, y){
 		this.x = x;
@@ -1415,6 +1536,8 @@ function keyPressed(){
 function preload(){
 	backgroundLevelOneImg = loadImage("assets/background.png");
 	backgroundLevelFourImg = loadImage("assets/background_stage4.png");
+	backgroundLevelFourEnd1Img = loadImage("assets/background_stage4_end1.png");
+	backgroundLevelFourEnd2Img = loadImage("assets/background_stage4_end2.png");
 	liveImg = loadImage("assets/live.png");
 	fireImg = loadImage("assets/fire.gif");
 	hammerImg = loadImage("assets/hammer.png");
@@ -1439,16 +1562,19 @@ function preload(){
 	mininasPurseImg = loadImage("assets/mininas_purse.png");
 	heartImg = loadImage("assets/heart.gif");
 	rivetImg = loadImage("assets/rivet.png");
+	donkeyKongImg = loadImage("assets/donkey_kong.gif");
 
 	stage1Music = loadSound("sound/stage1bgm.wav");
 	stage4Music = loadSound("sound/stage4bgm.mp3");
 	hammerMusic = loadSound("sound/hammer.mp3");
+	hurryUpMusic = loadSound("sound/hurryUp.mp3");
+	stage1ClearSound = loadSound("sound/stage1clear.mp3");
+	stage4ClearSound = loadSound("sound/stage4clear.wav");
 	walkingSound = loadSound("sound/walking.wav");
 	jumpSound = loadSound("sound/jump.wav");
 	deathSound = loadSound("sound/death.mp3");
 	destroySound = loadSound("sound/destroyWithHammer.wav");
 	bonusSound = loadSound("sound/bonus.wav");
-	endingSound = loadSound("sound/ending.mp3");
 }
 
 
@@ -1467,13 +1593,53 @@ function setup() {
 	level = new LevelOne();
 
 	//DEBUG
+	// level.mario.x = 300;
+	// level.mario.y = 204;
+	//
 	// level = new LevelFour();
+	// level.rivets = [new Rivet(480, 624)];
 }
 
 
 /* Draw function */
 
 function draw() {
+	if(level.checkWin()){
+
+		if(level.clearSound.isPlaying()){
+			level.draw();
+			printScore();
+			return;
+		}
+
+		if(level.level == 1){
+			score += level.bonus;
+			level = new LevelFour();
+			return;
+		}
+
+		if(level.level == 4){
+			score += level.bonus;
+			bGameOver = true;
+			level.draw();
+			printScore();
+
+			stroke("yellow");
+			fill("white");
+			textSize(40);
+			text("YOU WON!", WIDTH / 2, HEIGHT / 2 - 40);
+			textSize(30);
+			text("Press Enter key to play again", WIDTH / 2, HEIGHT / 2 + 50);
+			stroke("white");
+			fill("white");
+			noLoop();
+		}
+
+		return;
+	}
+
+
+
 	if(startPause){
 		if(millis() - newStartTime > 4000){
 			level.resetLevel();
@@ -1518,28 +1684,7 @@ function draw() {
 			newStartTime = millis();
 		}
 	}
-	else if(level.checkWin()){
-		level.music.stop();
-		score += level.bonus;
-
-		if(level.level == 1){
-			level = new LevelFour();
-		}
-
-		else if(level.level == 4){
-			endingSound.play();
-			bGameOver = true;
-			stroke("yellow");
-			fill("white");
-			textSize(40);
-			text("YOU WON!", WIDTH / 2, HEIGHT / 2 - 40);
-			textSize(30);
-			text("Press Enter key to play again", WIDTH / 2, HEIGHT / 2 + 50);
-			stroke("white");
-			fill("white");
-			noLoop();
-		}
-	}
+	
 
 	if(score >=7000 && !extraLifeAwarded){
 		lives++;
@@ -1547,17 +1692,5 @@ function draw() {
 	}
 
 	
-	// PRINT SCORE INFO
-	highScore = Math.max(highScore, score);
-	textSize(35);
-	textAlign(CENTER, TOP);
-	text('HIGH SCORE', WIDTH / 2, 5);
-	text(highScore.toString(), WIDTH / 2, 40);
-	text(score.toString(), 120, 5);
-	for(let i=0; i < lives; i++){
-		image(liveImg, 80 + i* 28, 40);
-	}
-	// text('LEVEL ' + level.level.toString(), WIDTH - 120, 5);
-	text('BONUS:', WIDTH - 120, 40);
-	text(level.bonus.toString(), WIDTH - 120, 75);
+	printScore();
 }
