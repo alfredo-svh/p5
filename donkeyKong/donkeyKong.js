@@ -179,8 +179,8 @@ class LevelOne extends Level{
 			image(heartImg, 324, 81);
 			if(heartImg.getCurrentFrame() == 0){
 				image(mininaImg, 264, 102);
-				donkeyKongImg.setFrame(0);
-				donkeyKongImg.pause();
+				cuajinaisImg.setFrame(0);
+				cuajinaisImg.pause();
 				this.donkeyKong.draw();
 			}
 			return;
@@ -191,7 +191,7 @@ class LevelOne extends Level{
 			this.barrels.push(new FirstBarrel());
 			this.barrelsThrown++;
 
-			donkeyKongImg.setFrame(0);
+			cuajinaisImg.setFrame(0);
 		}
 
 		//spawn barrel
@@ -204,7 +204,7 @@ class LevelOne extends Level{
 			}
 			this.lastBarrelSpawn = millis();
 			this.barrelsThrown++;
-			donkeyKongImg.setFrame(3);
+			cuajinaisImg.setFrame(3);
 		}
 
 		for(let barrel of this.barrels){
@@ -440,8 +440,8 @@ class LevelFour extends Level{
 		}
 
 		// donkey kong
-		donkeyKongImg.setFrame(0);
-		donkeyKongImg.pause();
+		cuajinaisImg.setFrame(0);
+		cuajinaisImg.pause();
 		this.donkeyKong.draw();
 
 		if(this.bonus <= 900 && !hurryUpMusic.isPlaying() && this.music.isPlaying()){
@@ -1338,12 +1338,12 @@ class DonkeyKong{
 		this.w = 144;
 		this.h = 96;
 
-		donkeyKongImg.setFrame(0);
-		donkeyKongImg.play();
+		cuajinaisImg.setFrame(0);
+		cuajinaisImg.play();
 	}
 
 	draw(){
-		image(donkeyKongImg, this.x, this.y);
+		image(cuajinaisImg, this.x, this.y);
 	}
 }
 
@@ -1562,7 +1562,7 @@ function preload(){
 	mininasPurseImg = loadImage("assets/mininas_purse.png");
 	heartImg = loadImage("assets/heart.gif");
 	rivetImg = loadImage("assets/rivet.png");
-	donkeyKongImg = loadImage("assets/donkey_kong.gif");
+	cuajinaisImg = loadImage("assets/cuajinais.gif");
 
 	stage1Music = loadSound("sound/stage1bgm.wav");
 	stage4Music = loadSound("sound/stage4bgm.mp3");
