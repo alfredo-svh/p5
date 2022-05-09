@@ -19,11 +19,7 @@ bGameOver = false;
 bLifeLost = false;
 score = 0;
 highScore = 0;
-
-
-// TODO
-// - finish graphics: (cuajinais)
-// - print points received?
+pointsShown = null;
 
 
 /* Helper functions */
@@ -106,7 +102,9 @@ class Level{
 		this.music = music;
 		this.sparks = [];
 		this.clearSound = clearSound;
+		pointsShown = null;
 
+		deathSound.stop();
 		this.music.loop();
 	}
 
@@ -115,8 +113,10 @@ class Level{
 
 	resetLevel(){
 		bonusTimer = millis();
+		pointsShown = null;
 		this.bonus = this.initialBonus;
 		this.sparks = [];
+		deathSound.stop();
 		this.music.loop();
 	}
 
@@ -243,6 +243,10 @@ class LevelOne extends Level{
 		}
 		if(this.fire){
 			this.fire.draw();
+		}
+
+		if(pointsShown){
+			pointsShown.draw();
 		}
 
 		image(mininaImg, 264, 102);
@@ -410,8 +414,8 @@ class LevelFour extends Level{
 		if(!this.mario.onRivet){
 			for(let [i, rivet] of this.rivets.entries()){
 				if(rivet.steppedOn){
-					score += 100;
-					bonusSound.play();
+					pointsShown = new PointsShown(100, rivet.x, rivet.y + rivet.h)
+					
 					this.rivets.splice(i, 1);
 				}
 			}
@@ -426,7 +430,10 @@ class LevelFour extends Level{
 		for(let item of this.items){
 			item.draw();
 		}
-		
+
+		if(pointsShown){
+			pointsShown.draw();
+		}
 
 		// pauline sprite
 		if(this.mario.x < 312){
@@ -549,14 +556,16 @@ class Mario extends BasePhysicsActor{
 	}
 
 	didJumpOver(){
+		let pointsWon = 0;
 		if (this.jumpedOver){
-			return false;
+			return pointsWon;
 		}
 
 		// let scanArea = {x: this.x+9, y: this.y + this.h, w: 30, h: 36};
 		// if(this.velX == 0){
 		// 	scanArea = {x: this.x-26, y: this.y + this.h, w: 100, h: 36}
 		// }
+
 
 		if(level.level == 1){
 
@@ -571,39 +580,39 @@ class Mario extends BasePhysicsActor{
 			if(numberOfBarrelsJumped > 0){
 				switch(numberOfBarrelsJumped){
 					case 1:
-						score += 100;
+						pointsWon += 100;
 						break;
 					case 2:
-						score += 300;
+						pointsWon += 300;
 						break;
 					default:
-						score += 500;
+						pointsWon += 500;
 				}
 				this.jumpedOver = true;
-				return true;
+				return pointsWon;
 			}
 		}
 		else if(level.level == 4){
 			for(let [i, rivet] of level.rivets.entries()){
 				if(this.x + this.w > rivet.x && this.x < rivet.x + rivet.w && this.y + 2 * this.h > rivet.y && this.y < rivet.y + rivet.h){
-					score += 100;
+					pointsWon += 100;
 
 					level.rivets.splice(i, 1);
 
-					return true;
+					return pointsWon;
 				}
 			}
 		}
 		
 		for(let spark of level.sparks){
 			if(this.x + this.w > spark.x && this.x < spark.x + spark.w && this.y + 2 * this.h > spark.y && this.y < spark.y + spark.h){
-				score += 100;
+				pointsWon += 100;
 				this.jumpedOver = true;
-				return true;
+				return pointsWon;
 			}
 		}
 	
-		return false;
+		return pointsWon;
 	}
 
 	// we use this function to know if we can start climbing up a ladder
@@ -769,8 +778,7 @@ class Mario extends BasePhysicsActor{
 			if(level.level == 4){
 				for(let [i, item] of level.items.entries()){
 					if(isThereCollision(this, item)){
-						bonusSound.play();
-						score += 300;
+						pointsShown = new PointsShown(300, item.x, this.y - 50);
 
 						level.items.splice(i, 1);
 					}
@@ -779,8 +787,9 @@ class Mario extends BasePhysicsActor{
 		}
 
 		if(this.isJumping && this.velY >= 0){
-			if(this.didJumpOver()){
-				bonusSound.play();
+			let pointsWon = this.didJumpOver();
+			if(pointsWon){
+				pointsShown = new PointsShown(pointsWon, this.x, this.y - 50);
 			}
 		}
 
@@ -1362,21 +1371,23 @@ class Hammer{
 		if(level.level == 1){
 			for(let [i, barrel] of level.barrels.entries()){
 				if(isThereCollision(this, barrel)){
+					let pointsWon = 0;
 					if(barrel.blue){
 						let rand = Math.random();
 						if(rand < 0.5){
-							score += 500;
+							pointsWon += 500;
 						}
 						else if(rand < 0.75){
-							score += 800;
+							pointsWon += 800;
 						}
 						else{
-							score += 300;
+							pointsWon += 300;
 						}
 					}
 					else{
-						score += 300;
+						pointsWon += 300;
 					}
+					pointsShown = new PointsShown(pointsWon, barrel.x, barrel.y - 100);
 					level.barrels.splice(i, 1);
 					destroySound.play();
 					return;
@@ -1387,15 +1398,17 @@ class Hammer{
 		for(let [i, spark] of level.sparks.entries()){
 			if(isThereCollision(this, spark)){
 				let rand = Math.random();
+				let pointsWon = 0;
 				if(rand < 0.5){
-					score += 500;
+					pointsWon += 500;
 				}
 				else if(rand < 0.75){
-					score += 800;
+					pointsWon += 800;
 				}
 				else{
-					score += 300;
+					pointsWon += 300;
 				}
+				pointsShown = new PointsShown(pointsWon, spark.x, spark.y - 100);
 				level.sparks.splice(i, 1);
 				destroySound.play();
 
@@ -1520,6 +1533,22 @@ class Fire{
 	}
 }
 
+class PointsShown{
+	constructor(points, x, y){
+		this.points = points;
+		this.x = x;
+		this.y = y;
+		this.time = millis() + 1000;
+
+		score += points;
+		bonusSound.play();
+	}
+
+	draw(){
+		text(this.points.toString(), this.x, this.y);
+	}
+}
+
 
 
 /* Input functions */
@@ -1604,6 +1633,10 @@ function setup() {
 /* Draw function */
 
 function draw() {
+	if(pointsShown && millis() >= pointsShown.time){
+		pointsShown = null;
+	}
+
 	if(level.checkWin()){
 
 		if(level.clearSound.isPlaying()){
